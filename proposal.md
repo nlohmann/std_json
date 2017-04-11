@@ -685,7 +685,7 @@ private:
     // the reference tokens
     std::vector<std::string> reference_tokens {};
 };
-``
+```
 
 ## Acknowledgements
 
