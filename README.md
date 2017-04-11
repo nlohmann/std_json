@@ -6,7 +6,7 @@ This repository documents the work on a [**proposal**](https://github.com/nlohma
 
 ## Where is the proposal?
 
-It's [**here**]https://github.com/nlohmann/std_json/proposal.md).
+It's [**here**](https://github.com/nlohmann/std_json/blob/master/proposal.md).
 
 ## Can I help?
 
