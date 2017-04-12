@@ -263,8 +263,8 @@ basic_json(std::nullptr) noexcept;
 // construction from various value types
 basic_json(string_type);
 basic_json(boolean_type) noexcept;
-basic_json(intetral_signed_type) noexcept;
-basic_json(intetral_unsigned_type) noexcept;
+basic_json(integral_signed_type) noexcept;
+basic_json(integral_unsigned_type) noexcept;
 basic_json(floating_point_type) noexcept;
 basic_json(object_type);
 basic_json(array_type);
