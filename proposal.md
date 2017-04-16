@@ -256,10 +256,19 @@ enum class value_t : /*unspecified*/
 ```cpp
 // explicit type construction, default content
 explicit basic_json(value_t) noexcept;
+```
 
+Constructs explicitly an object of the specified type. The underlying data
+type (see template parameters) must be default constructible and `noexcept`.
+
+```cpp
 // explicit null content construction
 basic_json(std::nullptr) noexcept;
+```
 
+Constructs an empty JSON object of type `value_t::null`.
+
+```cpp
 // construction from various value types
 basic_json(string_type);
 basic_json(boolean_type) noexcept;
@@ -268,20 +277,39 @@ basic_json(integral_unsigned_type) noexcept;
 basic_json(floating_point_type) noexcept;
 basic_json(object_type);
 basic_json(array_type);
+```
 
+Constructs a JSON object of the respective type, initialized with the
+specified value.
+
+```cpp
 // construction using initializer list
 basic_json(std::initializer_list<basic_json>);
+```
 
+Constructs a JSON object containing the values from the specified initializer
+list. The resulting type of the JSON object is `value_t::object`.
+
+```cpp
 // array construction with specified number of elements
 basic_json(size_type count, const basic_json & value);
+```
 
+Constructs a JSON value with `count` number of elements of the specified
+JSON value. The resulting type of the current object is `value_t::array`.
+
+```cpp
 // construction from iterators
 template <typename InputIterator>
 basic_json(InputIterator first, InputIterator last);
+```
 
+```cpp
 // copy constructor, non-converting
 basic_json(const basic_json &);
+```
 
+```cpp
 // move constructor, non-converting
 basic_json(basic_json &&);
 ```
