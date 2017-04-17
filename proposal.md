@@ -258,15 +258,16 @@ enum class value_t : /*unspecified*/
 explicit basic_json(value_t) noexcept;
 ```
 
-Constructs explicitly an object of the specified type. The underlying data
-type (see template parameters) must be default constructible and `noexcept`.
+Constructs explicitly an object representing a JSON value of the specified type.
+The underlying data type (see template parameters) must be default constructible
+and `noexcept`.
 
 ```cpp
 // explicit null content construction
 basic_json(std::nullptr) noexcept;
 ```
 
-Constructs an empty JSON object of type `value_t::null`.
+Constructs an empty JSON value of type `value_t::null`.
 
 ```cpp
 // construction from various value types
@@ -279,16 +280,16 @@ basic_json(object_type);
 basic_json(array_type);
 ```
 
-Constructs a JSON object of the respective type, initialized with the
-specified value.
+Constructs a JSON value of the respective type, initialized with the
+specified data.
 
 ```cpp
 // construction using initializer list
 basic_json(std::initializer_list<basic_json>);
 ```
 
-Constructs a JSON object containing the values from the specified initializer
-list. The resulting type of the JSON object is `value_t::object`.
+Constructs a JSON value containing the data from the specified initializer
+list. The resulting type of the JSON value is `value_t::object`.
 
 ```cpp
 // array construction with specified number of elements
@@ -319,6 +320,9 @@ basic_json(basic_json &&);
 ```cpp
 ~basic_json();
 ```
+
+Destructs its containing data. Contained JSON values (objects, arrays) are
+being destroyed as well.
 
 #### Modifying Operators
 
