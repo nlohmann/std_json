@@ -254,6 +254,16 @@ enum class value_t : /*unspecified*/
 #### Construction
 
 ```cpp
+basic_json() noexcept;
+```
+
+Default constructor.
+
+*Postcondition:* The type of the JSON value is `value_t::null`.
+
+*Throws:* Nothing.
+
+```cpp
 // explicit type construction, default content
 explicit basic_json(value_t) noexcept;
 ```
@@ -269,6 +279,10 @@ basic_json(std::nullptr) noexcept;
 
 Constructs an empty JSON value of type `value_t::null`.
 
+*Remarks:* Has the same effect as the default constructor.
+
+*Throws:* Nothing.
+
 ```cpp
 // construction from various value types
 basic_json(string_type);
@@ -282,6 +296,8 @@ basic_json(array_type);
 
 Constructs a JSON value of the respective type, initialized with the
 specified data.
+
+*Postcondition:* JSON value is constructed, containing the specified data.
 
 ```cpp
 // construction using initializer list
@@ -438,7 +454,22 @@ reference back() noexcept;
 
 ```cpp
 void clear() noexcept; // clears container
+```
 
+*Requires:* Nothing.
+
+*Effect:* Clears the JSON value.
+
+*Postcondition:* The contained value is destructed if necessary. All sub-values (in case
+of types `value_t::object` and `value_t::array`) are destructed. The JSON value is of
+type `value_t::null`. The JSON value is in the same state as if constructed
+with `basic_json(std::nullptr)` or the default constructor.
+
+*Remarks:* No synchronization.
+
+*Throws:* Nothing.
+
+```cpp
 // swap
 void swap(reference other) noexcept;
 void swap(array_t &);
