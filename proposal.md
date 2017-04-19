@@ -475,13 +475,37 @@ void swap(reference other) noexcept;
 void swap(array_t &);
 void swap(object_t &);
 void swap(string_t &);
+```
 
-// appends an element
+```cpp
 void push_back(basic_json &&);
 void push_back(const basic_json &);
 void push_back(const typename object_t::value_type &);
 void push_back(std::initializer_list<basic_json>);
+```
 
+*Requires:* The JSON value which the data is appended to must be of type
+`value_t::array` or `value_t::null`.
+
+*Effect:* Appends data to the JSON value. If the type was `value_t::null`, an
+empty JSON value of type `value_t::array` is created and the specified data appended.
+The appended data is stored in form of a JSON value and is owned by the JSON value
+it was appended to.
+
+*Remarks:* No synchronization.
+
+*Throws:*
+  - If the JSON value type was wrong: `std::domain_error`.
+  - The underlying data structure which holds the values also may throw an exception.
+    Which one depends on the underlying data structure, which is defined by the template
+    parameter `ArrayType`.
+
+*Complexity:* The operation relies on its underlying type for handling
+arrays, which is defined by the template parameter `ArrayType`. The operation
+`basic_json::push_back` does not introduce a higher complexity than amortized *O(1)*.
+
+
+```cpp
 reference operator+=(basic_json &&);
 reference operator+=(const basic_json &);
 reference operator+=(const typename object_t::value_type &);
