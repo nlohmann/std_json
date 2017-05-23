@@ -353,14 +353,74 @@ basic_json & operator=(basic_json &&);
 #### Non-Modifying Operators
 
 ```cpp
-// comparison: equal, non-converting
-bool operator==(const basic_json &) noexcept;
-
-// comparison: not equal, non-converting
-bool operator!=(const basic_json &) noexcept;
+bool operator==(const_reference) noexcept;
 ```
 
-The comparison for equal and non-equal compare the JSON object, including all children.
+*Effect:* Compares two JSON values for equality according to the following rules:
+- Two JSON values are equal if (1) they are from the same type and (2)
+  their stored values are equal.
+- Integer numbers are automatically converted before comparison.
+- Floating-point numbers are automatically converted before
+  comparison. Floating-point numbers are compared indirectly: two
+  floating-point numbers `f1` and `f2` are considered equal if neither
+  `f1 > f2` nor `f2 > f1` holds.
+- Two JSON null values are equal.
+- The types `ObjectType` and `ArrayType` must provide their own
+  comparison `operator==` which will be used to compare stored values.
+
+*Throws:* Nothing.
+
+*Complexity:* Type dependent:
+
+  Value type                 | Complexity
+  -------------------------- | ----------
+  `value_t::null`            | constant
+  `value_t::object`          | depending on comparison of equality of `ObjectType`
+  `value_t::array`           | depending on comparison of equality of `ArrayType`
+  `value_t::string`          | depending on comparison of equality of `StringType`
+  `value_t::boolean`         | constant
+  `value_t::number_integer`  | constant
+  `value_t::number_unsigned` | constant
+  `value_t::number_float`    | constant
+  `value_t::discarded`       | constant
+
+
+```cpp
+template <typename ScalarType, /*SFINAE omitted*/ >
+friend bool operator==(const_reference, const Scalartype) noexcept;
+
+template <typename ScalarType, /*SFINAE omitted*/ >
+friend bool operator==(const Scalartype, const_reference) noexcept;
+```
+
+*Effect:* Compare scalar types to the JSON value by converting the scalar
+value into a JSON value, followed by a comparison of equality.
+
+*Remarks:* Same properties as `bool operator==(const_reference) noexcept;`
+
+```cpp
+bool operator!=(const_reference) noexcept;
+```
+
+*Effect:* Compares two JSON values for inequality by calculating the equivalent
+of `not (lhs == rhs)`.
+
+*Throws:* Nothing.
+
+*Complexity:* Equal to `operator==(const_reference)`.
+
+```cpp
+template <typename ScalarType, /*SFINAE omitted*/ >
+friend bool operator!=(const_reference, const Scalartype) noexcept;
+
+template <typename ScalarType, /*SFINAE omitted*/ >
+friend bool operator!=(const Scalartype, const_reference) noexcept;
+```
+
+*Effect:* Compare scalar types to the JSON value by converting the scalar
+value into a JSON value, followed by a comparison of inequality.
+
+*Remarks:* Same properties as `bool operator!=(const_reference) noexcept;`
 
 #### Query Member Functions
 
