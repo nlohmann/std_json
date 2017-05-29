@@ -425,38 +425,219 @@ value into a JSON value, followed by a comparison of inequality.
 #### Query Member Functions
 
 ```cpp
-// type query
 constexpr value_t type() const noexcept;
+```
+
+*Effect:* Returns the type of the JSON value as a value of the `value_t` enumeration.
+
+*Throws:* Nothing.
+
+*Complexity:* Constant.
+
+```cpp
 constexpr operator value_t () const noexcept;
+```
 
-// individual type query
+*Effect:* Implicit type cast of the type of the JSON value to a value of the `value_t` enumeration.
+
+*Throws:* Nothing.
+
+*Complexity:* Constant.
+
+```cpp
 constexpr bool is_primitive() const noexcept;
+```
+
+*Effect:* This function returns `true` if the JSON type is primitive, which is one of the following types:
+  - `value_t::string`
+  - `value_t::number_integral_signed`
+  - `value_t::number_integral_unsigned`
+  - `value_t::number_floating_point`
+  - `value_t::boolean`
+  - `value_t::null`
+
+If not one of those types, it returns `false`.
+
+*Throws:* Nothing.
+
+*Complexity:* Constant.
+
+```cpp
 constexpr bool is_structured() const noexcept;
-constexpr bool is_null() const noexcept;
-constexpr bool is_boolean() const noexcept;
-constexpr bool is_string() const noexcept;
+```
+
+*Effect:* This function returns `true` if the JSON type is structured, which is one of the following types:
+  - `value_t::object`
+  - `value_t::array`
+
+If not one of those types, it returns `false`.
+
+*Throws:* Nothing.
+
+*Complexity:* Constant.
+
+```cpp
 constexpr bool is_number() const noexcept;
-constexpr bool is_integral_signed() const noexcept;
+```
+
+*Effect:* This function returns `true` if the JSON type is a number, which is one of the following types:
+  - `value_t::number_integral_signed`
+  - `value_t::number_integral_unsigned`
+  - `value_t::number_floating_point`
+
+If not one of those types, it returns `false`.
+
+*Throws:* Nothing.
+
+*Complexity:* Constant.
+
+```cpp
+constexpr bool is_null()              const noexcept;
+constexpr bool is_boolean()           const noexcept;
+constexpr bool is_string()            const noexcept;
+constexpr bool is_integral_signed()   const noexcept;
 constexpr bool is_integral_unsigned() const noexcept;
-constexpr bool is_floating_point() const noexcept;
-constexpr bool is_object() const noexcept;
-constexpr bool is_array() const noexcept;
-constexpr bool is_discarded() const noexcept;
+constexpr bool is_floating_point()    const noexcept;
+constexpr bool is_object()            const noexcept;
+constexpr bool is_array()             const noexcept;
+constexpr bool is_discarded()         const noexcept;
+```
 
-// size and capacity
-bool empty() const noexcept; // checks whether the container is empty
-size_type size() const noexcept; // returns the number of elements
-size_type max_size() const noexcept; // returns the maximum possible number of elements
+*Effect:* This function returns `true` if the JSON type is of the specific one, `false` otherwise.
 
-// other member functions
+*Throws:* Nothing.
 
-// returns the number of occurrences of a key in a JSON object
+*Complexity:* Constant.
+
+```cpp
+bool empty() const noexcept;
+```
+
+*Effect:* Returns `true` if a JSON value has no elements, `false` otherwise.
+The return value depends on the different types and is defined as follows:
+
+  Value type                           | return value
+  ------------------------------------ | -------------
+  `value_t::null`                      | `true`
+  `value_t::boolean`                   | `false`
+  `value_t::string`                    | `false`
+  `value_t::number_integral_signed`    | `false`
+  `value_t::number_integral_unsigned`  | `false`
+  `value_t::number_floating_point`     | `false`
+  `value_t::object`                    | result of function `object_t::empty()`
+  `value_t::array`                     | result of function `array_t::empty()`
+  `value_t::discarded`                 | `false`
+
+*Remarks:* This function does not return whether a string stored as JSON value
+is empty - it returns whether the JSON container itself is empty which is
+`false` in the case of a string.
+
+*Remarks:* This function helps `basic_json` satisfying the [Container](http://en.cppreference.com/w/cpp/concept/Container)
+requirements:
+  - The complexity is constant.
+  - Has the semantics of `begin() == end()`.
+
+*Throws:* Nothing.
+
+*Complexity:* Constant, as long as `array_t` and `object_t` satisfy the Container concept;
+that is, their `empty()` functions have constant complexity.
+
+
+```cpp
+size_type size() const noexcept;
+```
+*Effect:* Returns the number of elements in a JSON value.
+The return value depends on the different types and is defined as follows:
+
+  Value type                           | return value
+  ------------------------------------ | -------------
+  `value_t::null`                      | `0`
+  `value_t::boolean`                   | `1`
+  `value_t::string`                    | `1`
+  `value_t::number_integral_signed`    | `1`
+  `value_t::number_integral_unsigned`  | `1`
+  `value_t::number_floating_point`     | `1`
+  `value_t::object`                    | result of function `object_t::size()`
+  `value_t::array`                     | result of function `array_t::size()`
+  `value_t::discarded`                 | `0`
+
+*Remarks:* This function does not return the length of a string stored as JSON
+value - it returns the number of elements in the JSON value which is `1` in the case of a string.
+
+*Remarks:* This function helps `basic_json` satisfying the [Container](http://en.cppreference.com/w/cpp/concept/Container)
+requirements:
+  - The complexity is constant.
+  - Has the semantics of `std::distance(begin(), end())`.
+
+*Throws:* Nothing.
+
+*Complexity:* Constant, as long as `array_t` and `object_t` satisfy the Container concept;
+that is, their size() functions have constant complexity.
+
+
+```cpp
+size_type max_size() const noexcept;
+```
+
+*Effect:* Returns the maximum number of elements a JSON value is able to hold due to
+system or library implementation limitations.
+The return value depends on the different types and is defined as follows:
+
+  Value type                           | return value
+  ------------------------------------ | -------------
+  `value_t::null`                      | `0` (same as `size()`)
+  `value_t::boolean`                   | `1` (same as `size()`)
+  `value_t::string`                    | `1` (same as `size()`)
+  `value_t::number_integral_signed`    | `1` (same as `size()`)
+  `value_t::number_integral_unsigned`  | `1` (same as `size()`)
+  `value_t::number_floating_point`     | `1` (same as `size()`)
+  `value_t::object`                    | result of function `object_t::max_size()`
+  `value_t::array`                     | result of function `array_t::max_size()`
+  `value_t::discarded`                 | `0` (same as `size()`)
+
+*Remarks:* This function helps `basic_json` satisfying the [Container](http://en.cppreference.com/w/cpp/concept/Container)
+requirements:
+  - The complexity is constant.
+  - Has the semantics of returning `b.size()` where `b` is the largest possible JSON value.
+
+*Throws:* Nothing.
+
+*Complexity:* Constant, as long as `array_t` and `object_t` satisfy the Container concept;
+that is, their `max_size()` functions have constant complexity.
+
+```cpp
 size_type count(typename object_t::key_type key) const;
+```
 
-// find an element in a JSON object
-iterator find(typename object_t::key_type key);
+*Effect:* Returns the number of occurrences of a key in a JSON object.
+This method always returns `0` when executed on a JSON type that is not of
+type `value_t::object`.
+
+*Remarks:* If `ObjectType` is the default `std::map` type, the return value will
+always be `0` (`key` was not found) or `1` (`key` was found).
+
+*Throws:* Nothing.
+
+*Complexity:* Depends on the underlying type of `ObjectType` for lookups.
+`basic_json` adds constant complexity.
+
+```cpp
+iterator       find(typename object_t::key_type key);
 const_iterator find(typename object_t::key_type key) const;
 ```
+
+*Effect:* Finds an element in a JSON object with key equivalent to `key`.
+If the element is not found or the JSON value is not an object, the result
+of `end()` is returned.
+This method always returns the result of `end()` when executed on a JSON type
+that is not of type `value_t::object`.
+
+*Remarks:* There is a const and a non-const overload of this function.
+
+*Throws:* Nothing.
+
+*Complexity:* Depends on the underlying type of `ObjectType` for lookups.
+`basic_json` adds constant complexity.
 
 #### Element Access
 
