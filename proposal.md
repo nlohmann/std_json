@@ -711,18 +711,70 @@ with `basic_json(std::nullptr)` or the default constructor.
 *Throws:* Nothing.
 
 ```cpp
-// swap
-void swap(reference other) noexcept;
+void swap(reference) noexcept;
+```
+
+*Effect:* Exchanges the contents of the JSON value with those of the specified one.
+Does not invoke any move, copy, or swap operations on individual elements.
+All iterators and references remain valid. The past-the-end iterator is invalidated.
+
+*Remarks:* No synchronization.
+
+*Requires:* Nothing.
+
+*Throws:* Nothing.
+
+*Comlexity:* Constant.
+
+```cpp
 void swap(array_t &);
+```
+
+*Effect:* Exchanges the contents of a JSON array with those of the specified one.
+Does not invoke any move, copy, or swap operations on individual elements.
+All iterators and references remain valid. The past-the-end iterator is invalidated.
+
+*Remarks:* No synchronization.
+
+*Throws:* `std::domain_error` if JSON value is not of type `value_t::array`.
+Example: `"cannot use swap() with string"`.
+
+*Comlexity:* Constant.
+
+```cpp
 void swap(object_t &);
+```
+
+*Effect:* Exchanges the contents of a JSON object with those of the specified one.
+Does not invoke any move, copy, or swap operations on individual elements.
+All iterators and references remain valid. The past-the-end iterator is invalidated.
+
+*Remarks:* No synchronization.
+
+*Throws:* `std::domain_error` if JSON value is not of type `value_t::object`.
+Example: `"cannot use swap() with string"`.
+
+*Comlexity:* Constant.
+
+```cpp
 void swap(string_t &);
 ```
+
+*Effect:* Exchanges the contents of a JSON string with those of the specified one.
+Does not invoke any move, copy, or swap operations on individual elements.
+All iterators and references remain valid. The past-the-end iterator is invalidated.
+
+*Remarks:* No synchronization.
+
+*Throws:* `std::domain_error` when JSON value is not of type `value_t::string`
+Example: `"cannot use swap() with boolean"`.
+
+*Comlexity:* Constant.
 
 ```cpp
 void push_back(basic_json &&);
 void push_back(const basic_json &);
 void push_back(const typename object_t::value_type &);
-void push_back(std::initializer_list<basic_json>);
 ```
 
 *Requires:* The JSON value which the data is appended to must be of type
@@ -745,17 +797,70 @@ it was appended to.
 arrays, which is defined by the template parameter `ArrayType`. The operation
 `basic_json::push_back` does not introduce a higher complexity than amortized *O(1)*.
 
+```cpp
+void push_back(std::initializer_list<basic_json>);
+```
+
+*Effect:* This function allows to use `push_back` with an initializer list. In case
+  1. the current JSON value is of type `value_t::object`, and
+  2. the initializer list contains only two elements, and
+  3. the first element of the initializer list is a string,
+the initializer list is converted into an object element (JSON value of type `value_t::object`)
+and added using `void push_back(const typename object_t::value_type&)`. Otherwise, 
+the initializer list is converted to a JSON value and added using `void push_back(basic_json&&)`.
+
+*Throws:*
+  - If the JSON value type was wrong: `std::domain_error`.
+  - The underlying data structure which holds the values also may throw an exception.
+    Which one depends on the underlying data structure, which is defined by the template
+    parameter `ArrayType`.
+
+*Complexity:* Linear in the size of the initializer list.
+
+*Remarks:* This function is required to resolve an ambiguous overload error,
+because pairs like `{"key", "value"}` can be both interpreted as `object_t::value_type`
+or `std::initializer_list<basic_json>`.
 
 ```cpp
 reference operator+=(basic_json &&);
 reference operator+=(const basic_json &);
 reference operator+=(const typename object_t::value_type &);
+```
+
+*Remarks:* The same requirements, effects, exceptions and complexity as
+`void push_back(basic_json &&);`. Except, it returns the added JSON value
+as reference.
+
+```cpp
 reference operator+=(std::initializer_list<basic_json>);
+```
 
-// emplace
-template<class... Args> void emplace_back(Args && ...);
+*Remarks:* The same requirements, effects, exceptions and complexity as
+`void push_back(std::initializer_list<basic_json>);`. Except, it returns the
+added JSON value as reference.
+
+```cpp
+template<class... Args> reference emplace_back(Args && ...);
+```
+
+*Effect:* Appends a new JSON value from the passed parameters to the JSON value.
+If the function is called on a JSON value of type `value_t::null`, an empty
+JSON value of type `value_t::array` is created before appending the newly created
+value from the arguments. A reference to the newly created object is returned.
+
+*Requires:* A `basic_json` object must be construtible from the template argument types.
+
+*Throws:* `std::domain_error` when called on a JSON value of type other than
+`value_t::array` or `value_t::null`.
+
+*Complexity:* Amortized constant plus the complexity of the append operation of
+the underlying data structure, which is defined by the template parameter `ArrayType`.
+
+```cpp
 template<class... Args> std::pair<iterator, bool> emplace(Args && ...);
+```
 
+```cpp
 // insert
 iterator insert(const_iterator pos, const basic_json & value);
 iterator insert(const_iterator pos, basic_json && value);
