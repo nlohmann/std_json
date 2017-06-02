@@ -952,14 +952,83 @@ The function returns a pair, containing:
 the underlying data structure, which is defined by the template parameter `ObjectType`.
 
 ```cpp
-// insert
-iterator insert(const_iterator pos, const basic_json & value);
-iterator insert(const_iterator pos, basic_json && value);
-iterator insert(const_iterator pos, size_type count, const basic_json & value);
-iterator insert(const_iterator pos, const_iterator first, const_iterator last);
-iterator insert(const_iterator pos, std::initializer_list<basic_json> values);
+iterator insert(const_iterator, const basic_json &);
+iterator insert(const_iterator, basic_json &&);
+```
 
-// erase
+*Effect:* Inserts a JSON value before the position specified by the iterator.
+The function returns an iterator pointing to the newly inserted JSON value.
+
+*Throws:*
+- `std::domain_error` if the JSON value which the member function is called upon,
+  is not of type `value_t::array`.
+- `std::invalid_argument` if the specified iterator is not an iterator of `*this`.
+
+*Postcondition:* If the insertion was not possible, the JSON value which the member
+function was called upon, remains in the same state as before the function call.
+
+*Complexity:* Constant plus the complexity of the insert operation of the underlying
+data structure, defined by the type `ArrayType`.
+
+```cpp
+iterator insert(const_iterator, size_type, const basic_json &);
+```
+
+*Effect:* Inserts a number of copies of the specified JSON value before the given position,
+specified by the iterator. The function returns an iterator pointing to the first newly
+inserted JSON value. If the number of elements to insert is `0`, the function inserts no
+elements and returns the position specified by the iterator.
+
+*Throws:*
+- `std::domain_error` if the JSON value which the member function is called upon,
+  is not of type `value_t::array`.
+- `std::invalid_argument` if the specified iterator is not an iterator of `*this`.
+
+*Postcondition:* If the insertion was not possible, the JSON value which the member
+function was called upon, remains in the same state as before the function call.
+Either all new JSON values can be inserted or none.
+
+*Complexity:* Linear in number of copies to insert, plus the complexity of the insert
+operation of the underlying data structure, defined by the type `ArrayType`.
+
+```cpp
+iterator insert(const_iterator pos, const_iterator first, const_iterator last);
+```
+
+*Effect:* Inserts JSON values from the specified range `[first, last)` before the
+position given by the iterator. The function returns an iterator pointing to the first newly
+inserted JSON value. If the range is empty (`first == last`), the function inserts no
+elements and returns the position specified by the iterator.
+
+*Remarks:* Insertion into itself is forbidden.
+
+*Remarks:* Elements which the specified range `[first, last)` is referring to,
+must not necesserily be JSON values themselfs, but `basic_json` objects must
+be constructible from them.
+
+*Throws:*
+- `std::domain_error` if the JSON value which the member function is called upon,
+  is not of type `value_t::array`.
+- `std::invalid_argument` if the specified iterator is not an iterator of `*this`.
+- `std::invalid_argument` if the specified iterators `first` and `last` do not belong
+  to the same JSON value.
+- `std::invalid_argument` if the specified iterators `first` or `last` are iterators
+  of the container for which `insert` is being called.
+
+*Postcondition:* If the insertion was not possible, the JSON value which the member
+function was called upon, remains in the same state as before the function call.
+Either all new JSON values can be inserted or none.
+
+*Complexity:* Linear in number of copies to insert, i.e. `std::distance(first, last)`,
+plus the complexity of the insert operation of the underlying data structure, defined by
+the type `ArrayType`.
+
+```cpp
+iterator insert(const_iterator pos, std::initializer_list<basic_json> values);
+```
+
+
+```cpp
 size_type erase(const typename object_t::key_type & key); // remove element from a JSON object given a key
 void erase(const size_type index); // remove element from a JSON array given an index
 template<class IteratorType, /* SFINAE omitted */ > IteratorType erase(IteratorType first, IteratorType last);
