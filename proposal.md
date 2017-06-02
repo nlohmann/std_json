@@ -6,10 +6,44 @@
 
 # JSON parser and generator library
 
+<a name="introduction"></a>
 ## Introduction
 
-This paper presents a proposal for *JavaScript Object Notation* [RFC7159] parsing and generation. It proposes a library extension.
+This paper presents a proposal for *JavaScript Object Notation* [RFC7159] parsing and generation.
+It proposes a library extension.
 
+
+<a name="toc"></a>
+## Table of Contents
+
+- [Motivation](#motivation)
+- [Example](#example)
+- [Scope](#scope)
+- [Terminology](#terminology)
+- [Technical Specification](#tech-spec)
+  - [Header `<json>` synopsis](#header-synopsis)
+  - [Class Template `basic_json`](#class-basic_json)
+    - [Enumeration `value_t`](#class-basic_json-enum-value_t)
+    - [Construction](#class-basic_json-construction)
+    - [Destruction](#class-basic_json-destruction)
+    - [Modifying Operators](#class-basic_json-modifying-operators)
+    - [Non-Modifying Operators](#class-basic_json-non-modifying-operators)
+    - [Query Member Functions](#class-basic_json-query-member-functions)
+    - [Element Access](#class-basic_json-element-access)
+    - [Container Access](#class-basic_json-container-access)
+    - [Container Operations](#class-basic_json-container-operations)
+    - [Serialization / Deserialization](#class-basic_json-serialization)
+  - [Nested Class `basic_json::const_iterator`](#class-const_iterator)
+  - [Nested Class `basic_json::iterator`](#class-iterator)
+  - [Nested Class `basic_json::json_reverse_iterator`](#class-json_reverse_iterator)
+  - [Nested Class `basic_json::const_reverse_iterator`](#class-const_reverse_iterator)
+  - [Nested Class `basic_json::reverse_iterator`](#class-reverse_iterator)
+  - [Nested Class `basic_json::json_pointer`](#class-json_pointer)
+- [Acknowledgements](#acknowledgements)
+- [References](#references)
+
+
+<a name="motivation"></a>
 ## Motivation
 
 Data represented in JSON format is very widely used for serialization of data. Prominent uses are the numerous frameworks used by websites for asynchronous communication, as well as configuration data.
@@ -20,6 +54,8 @@ There are numerous libraries written in C and C++, usable by C++, but none in th
 
 The goal should be a library extension that fits well into the standard library, customizable and with an user friendly interface.
 
+
+<a name="example"></a>
 ### Example: representation of data in JSON and handling in C++
 
 JSON data:
@@ -88,10 +124,14 @@ json j = {
 };
 ```
 
+
+<a name="scope"></a>
 ## Scope
 
 This extension is a pure library extension. It does not require changes to the standard components. The extension can be implemented in C++11, C++14, and C++17.
 
+
+<a name="terminology"></a>
 ## Terminology
 
 The terminology used in this paper is intended to be consistent with terms used in the JSON world [RFC7159].
@@ -122,10 +162,14 @@ The term *number* [RFC7159 / chapter 6] represents a numerical value and is one 
 
 Speical cases like *inf* and *NaN* are not permitted.
 
+
+<a name="tech-spec"></a>
 ## Technical Specification
 
 **TODO**
 
+
+<a name="header-synopsis"></a>
 ### Header `<json>` synopsis
 
 ```cpp
@@ -159,6 +203,8 @@ namespace experimental {
 }
 ```
 
+
+<a name="class-basic_json"></a>
 ### Class Template `basic_json`
 
 ```cpp
@@ -234,6 +280,8 @@ public:
 };
 ```
 
+
+<a name="class-basic_json-enum-value_t"></a>
 #### Enumeration `value_t`
 
 ```cpp
@@ -251,6 +299,8 @@ enum class value_t : /*unspecified*/
 };
 ```
 
+
+<a name="class-basic_json-construction"></a>
 #### Construction
 
 ```cpp
@@ -331,6 +381,8 @@ basic_json(const basic_json &);
 basic_json(basic_json &&);
 ```
 
+
+<a name="class-basic_json-destruction"></a>
 #### Destruction
 
 ```cpp
@@ -340,6 +392,8 @@ basic_json(basic_json &&);
 Destructs its containing data. Contained JSON values (objects, arrays) are
 being destroyed as well.
 
+
+<a name="class-basic_json-modifying-operators"></a>
 #### Modifying Operators
 
 ```cpp
@@ -350,6 +404,8 @@ basic_json & operator=(const basic_json &);
 basic_json & operator=(basic_json &&);
 ```
 
+
+<a name="class-basic_json-non-modifying-operators"></a>
 #### Non-Modifying Operators
 
 ```cpp
@@ -422,6 +478,8 @@ value into a JSON value, followed by a comparison of inequality.
 
 *Remarks:* Same properties as `bool operator!=(const_reference) noexcept;`
 
+
+<a name="class-basic_json-query-member-functions"></a>
 #### Query Member Functions
 
 ```cpp
@@ -639,6 +697,8 @@ that is not of type `value_t::object`.
 *Complexity:* Depends on the underlying type of `ObjectType` for lookups.
 `basic_json` adds constant complexity.
 
+
+<a name="class-basic_json-element-access"></a>
 #### Element Access
 
 ```cpp
@@ -661,6 +721,8 @@ template <class ValueType, /* SFINAE omitted */ >
 ValueType value(const json_pointer &, ValueType default_value) const;
 ```
 
+
+<a name="class-basic_json-container-access"></a>
 #### Container Access
 
 ```cpp
@@ -691,6 +753,8 @@ const_reference back() const noexcept;
 reference back() noexcept;
 ```
 
+
+<a name="class-basic_json-container-operations"></a>
 #### Container Operations
 
 ```cpp
@@ -806,7 +870,7 @@ void push_back(std::initializer_list<basic_json>);
   2. the initializer list contains only two elements, and
   3. the first element of the initializer list is a string,
 the initializer list is converted into an object element (JSON value of type `value_t::object`)
-and added using `void push_back(const typename object_t::value_type&)`. Otherwise, 
+and added using `void push_back(const typename object_t::value_type&)`. Otherwise,
 the initializer list is converted to a JSON value and added using `void push_back(basic_json&&)`.
 
 *Throws:*
@@ -875,6 +939,8 @@ template<class IteratorType, /* SFINAE omitted */ > IteratorType erase(IteratorT
 template<class IteratorType, /* SFINAE omitted */ > IteratorType erase(IteratorType pos);
 ```
 
+
+<a name="class-basic_json-serialization"></a>
 #### Serialization / Deserialization
 
 ```cpp
@@ -888,6 +954,8 @@ friend std::ostream & operator<<(std::ostream & const basic_json &);
 friend std::isteram & operator>>(std::istream & basic_json &);
 ```
 
+
+<a name="class-const_iterator"></a>
 ### Nested Class `basic_json::const_iterator`
 
 Satisfies:
@@ -946,6 +1014,8 @@ public:
 };
 ```
 
+
+<a name="class-iterator"></a>
 ### Nested Class `basic_json::iterator`
 
 ```cpp
@@ -980,6 +1050,8 @@ public:
 };
 ```
 
+
+<a name="class-json_reverse_iterator"></a>
 ### Nested Class `basic_json::json_reverse_iterator`
 
 ```cpp
@@ -1033,18 +1105,24 @@ public:
 };
 ```
 
+
+<a name="class-const_reverse_iterator"></a>
 ### Nested Class `basic_json::const_reverse_iterator`
 
 ```cpp
 using const_reverse_iterator = json_reverse_iterator<typename basic_json::const_iterator>;
 ```
-	
+
+
+<a name="class-reverse_iterator"></a>
 ### Nested Class `basic_json::reverse_iterator`
 
 ```cpp
 using reverse_iterator = json_reverse_iterator<typename basic_json::iterator>;
 ```
-	
+
+
+<a name="class-json_pointer"></a>
 ### Nested Class `basic_json::json_pointer`
 
 ```cpp
@@ -1120,10 +1198,14 @@ private:
 };
 ```
 
+
+<a name="acknowledgements"></a>
 ## Acknowledgements
 
 **TODO**
 
+
+<a name="references"></a>
 ## References
 
 - [RFC7159]	JavaScript Object Notation, <https://tools.ietf.org/html/rfc7159>
