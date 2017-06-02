@@ -1002,10 +1002,6 @@ elements and returns the position specified by the iterator.
 
 *Remarks:* Insertion into itself is forbidden.
 
-*Remarks:* Elements which the specified range `[first, last)` is referring to,
-must not necesserily be JSON values themselfs, but `basic_json` objects must
-be constructible from them.
-
 *Throws:*
 - `std::domain_error` if the JSON value which the member function is called upon,
   is not of type `value_t::array`.
