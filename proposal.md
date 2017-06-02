@@ -917,12 +917,39 @@ value from the arguments. A reference to the newly created object is returned.
 *Throws:* `std::domain_error` when called on a JSON value of type other than
 `value_t::array` or `value_t::null`.
 
+*Remarks:* No synchronization.
+
 *Complexity:* Amortized constant plus the complexity of the append operation of
 the underlying data structure, which is defined by the template parameter `ArrayType`.
 
 ```cpp
 template<class... Args> std::pair<iterator, bool> emplace(Args && ...);
 ```
+
+*Effect:* Inserts a new JSON value into a JSON value of type `value_t::object`,
+constructed in-place with the given arguments, if there is no element with the key in the
+container. If the function is called on a JSON value of type `value_t::null`, an empty
+JSON value of type `value_t::object` is created before appending the newly created value.
+
+If a JSON value with the same key already exists, its content will be replaced with
+the newly created JSON value from the specified parameters. If an insertion of the newly
+created JSON value is not possible, the underlying container remains unchanged.
+
+The function returns a pair, containing:
+  - *first:* an iterator to the inserted JSON value or the already existing JSON value if
+    no insertion happened because of an existing key. If the insertion failed, the result
+    of `end()` will be returned.
+  - *second:* a `bool` denoting wheather the insertion took place.
+
+*Requires:* A `basic_json` object must be construtible from the template argument types.
+
+*Throws:* `std::domain_error` when called on a JSON value of type other than
+`value_t::object` or `value_t::null`.
+
+*Remarks:* No synchronization.
+
+*Complexity:* Amortized constant plus the complexity of the insert operation of
+the underlying data structure, which is defined by the template parameter `ObjectType`.
 
 ```cpp
 // insert
