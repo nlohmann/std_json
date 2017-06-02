@@ -1002,6 +1002,8 @@ elements and returns the position specified by the iterator.
 
 *Remarks:* Insertion into itself is forbidden.
 
+*Remarks:* No synchronization.
+
 *Throws:*
 - `std::domain_error` if the JSON value which the member function is called upon,
   is not of type `value_t::array`.
@@ -1010,6 +1012,9 @@ elements and returns the position specified by the iterator.
   to the same JSON value.
 - `std::invalid_argument` if the specified iterators `first` or `last` are iterators
   of the container for which `insert` is being called.
+
+*Precondition:* The JSON value which the elements are inserted into must be of
+type `value_t::array`.
 
 *Postcondition:* If the insertion was not possible, the JSON value which the member
 function was called upon, remains in the same state as before the function call.
@@ -1020,9 +1025,30 @@ plus the complexity of the insert operation of the underlying data structure, de
 the type `ArrayType`.
 
 ```cpp
-iterator insert(const_iterator pos, std::initializer_list<basic_json> values);
+iterator insert(const_iterator, std::initializer_list<basic_json>);
 ```
 
+*Effect:* Inserts JSON values from the initializer list before the position
+specified by the iterator. The function returns an iterator pointing to the first
+newly inserted JSON value. If the initializer list is empty, the function inserts
+no elements and returns the specified iterator.
+
+*Remarks:* No synchronization.
+
+*Precondition:* The JSON value which the elements are inserted into must be of
+type `value_t::array`.
+
+*Postcondition:* If the insertion was not possible, the JSON value which the member
+function was called upon, remains in the same state as before the function call.
+Either all new JSON values can be inserted or none.
+
+*Throws:*
+- `std::domain_error` if the JSON value which the member function is called upon,
+  is not of type `value_t::array`.
+- `std::invalid_argument` if the specified iterator is not an iterator of `*this`.
+
+*Complexity:* Linear in size of the initializer list, plus the complexity of the
+insert operation of the underlying data structure, defined by the type `ArrayType`.
 
 ```cpp
 size_type erase(const typename object_t::key_type & key); // remove element from a JSON object given a key
