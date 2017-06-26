@@ -1051,11 +1051,109 @@ Either all new JSON values can be inserted or none.
 insert operation of the underlying data structure, defined by the type `ArrayType`.
 
 ```cpp
-size_type erase(const typename object_t::key_type & key); // remove element from a JSON object given a key
-void erase(const size_type index); // remove element from a JSON array given an index
-template<class IteratorType, /* SFINAE omitted */ > IteratorType erase(IteratorType first, IteratorType last);
+size_type erase(const typename object_t::key_type &);
+```
+
+*Effect:* Removes elements from a JSON value of type `value_t::object`.
+The function returns the number of removed elements, which is zero or a positive
+number.
+
+*Postcondition:* References and iterators to the erased elements are invalidated.
+Other references and iterators are not affected.
+
+*Throws:* `std::domain_error` if the type of the JSON value was other than `value_t::object`.
+
+*Remarks:* No synchronization.
+
+*Complexity:* The same complexity to find and erase all occurrences of the specified key
+of the underlying data structure.
+
+```cpp
+void erase(const size_type);
+```
+
+*Effect:* Removes an element at the specified index (in the range `[0, size()-1]`)
+from a JSON value of type `value_t::array`.
+
+*Postcondition:* References and iterators are invalidated.
+
+*Throws:*
+- `std::domain_error` if the JSON value which the member function is called upon,
+  is not of type `value_t::array`.
+- `std::out_of_range` if the specified index is not in the range `[0, size()-1]`.
+
+*Remarks:* No synchronization.
+
+*Complexity:* The same complexity to erase the element at the specified index in
+the underlying data structure.
+
+```cpp
 template<class IteratorType, /* SFINAE omitted */ > IteratorType erase(IteratorType pos);
 ```
+
+*Effects:* Erases the element from the JSON value at the position specified by the iterator.
+The member function returns an iterator pointing to the element after the erased element.
+Depending on the type of the JSON value:
+- `value_t::object` / `value_t::array`: the element at the specified position will
+  be erased.
+- Primitive types (except `value_t::null`): the resulting JSON value will be of
+  type `value_t::null`, its content will be erased.
+
+*Precondition:* The iterator type `IteratorType` must be of `iterator` or `const_iterator`.
+
+*Postcondition:* References and iterators are invalidated.
+
+*Throws:*
+- `std::domain_error` if the JSON value which the member function is called upon,
+  is of type `value_t::null`.
+- `std::invalid_argument` if the specified iterator does not belong to the current
+  JSON value.
+- `std::out_of_range` if the specified position is not in the range `[begin(), end())`.
+
+*Remarks:* No synchronization.
+
+*Complexity:* Depends on the type of the JSON value:
+- `value_t::object`: The complexity of erasure of an element of the underlying
+  data structure, defined by `ObjectType`. Constant overhead by `basic_json`.
+- `value_t::array`: The complexity of erasure of an element of the underlying
+  data structure, defined by `ArrayType`. Constant overhead by `basic_json`.
+- `value_t::string`: Complexity of the destruction of the `StringType`. Constant
+  overhead by `basic_json`.
+- others: Constant.
+
+```cpp
+template<class IteratorType, /* SFINAE omitted */ > IteratorType erase(IteratorType first, IteratorType last);
+```
+
+*Effect:* Erases all elments from the JSON value specified by the range `[first, last)`.
+The function returns an iterator pointing to the element after the last erased. Erasing an
+empty range is a no-op. Depending on the type of the JSON value:
+- `value_t::object` / `value_t::array`: The elements in the specified range are
+  erased from the JSON value.
+- Primitive types (except `value_t::null`): the resulting JSON value will be of
+  type `value_t::null`, its content will be erased.
+
+*Precondition:* The iterator type `IteratorType` must be of `iterator` or `const_iterator`.
+
+*Postcondition:* References and iterators are invalidated.
+
+*Throws:*
+- `std::domain_error` if the JSON value which the member function is called upon,
+  is of type `value_t::null`.
+- `std::invalid_argument` if of of the specified iterators does not belong to the current
+  JSON value.
+- `std::out_of_range` if the specified position is not in the range `[begin(), end())`.
+
+*Remarks:* No synchronization.
+
+*Complexity:* Depends on the type of the JSON value:
+- `value_t::object`: The complexity of erasure of the range of elements of the underlying
+  data structure, defined by `ObjectType`. Constant overhead by `basic_json`.
+- `value_t::array`: The complexity of erasure of the range of elements of the underlying
+  data structure, defined by `ArrayType`. Constant overhead by `basic_json`.
+- `value_t::string`: Complexity of the destruction of the `StringType`. Constant
+  overhead by `basic_json`.
+- others: Constant.
 
 
 <a name="class-basic_json-serialization"></a>
