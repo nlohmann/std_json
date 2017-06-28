@@ -726,32 +726,99 @@ ValueType value(const json_pointer &, ValueType default_value) const;
 #### Container Access
 
 ```cpp
-// const iterator query
-const_iterator begin() const noexcept;
-const_iterator end() const noexcept;
-
+const_iterator begin()  const noexcept;
 const_iterator cbegin() const noexcept;
-const_iterator cend() const noexcept;
-
-// iterator query
-iterator begin() noexcept;
-iterator end() noexcept;
-
-// reverse const iterator query
-reverse_const_iterator rbegin() const noexcept;
-reverse_const_iterator rend() const noexcept;
-
-// reverse iterator query
-reverse_iterator rbegin() noexcept;
-reverse_iterator rend() noexcept;
-
-// front/back
-const_reference front() const noexcept;
-reference front() noexcept;
-
-const_reference back() const noexcept;
-reference back() noexcept;
+      iterator begin()        noexcept;
 ```
+
+*Effect:* Returns an iterator to the first element, overloads for const and non-const versions.
+
+*Throws:* Nothing.
+
+*Complexity:* Constant.
+
+```cpp
+const_iterator end()  const noexcept;
+const_iterator cend() const noexcept;
+      iterator end()        noexcept;
+```
+
+*Effect:* Returns an iterator to one past the last element, overloads for const and
+non-const versions.
+
+*Throws:* Nothing.
+
+*Complexity:* Constant.
+
+```cpp
+reverse_const_iterator rbegin() const noexcept;
+reverse_iterator       rbegin()       noexcept;
+```
+
+*Effect:* Returns an iterator to the reverse-beginning, overloads for const and non-const versions.
+
+*Throws:* Nothing.
+
+*Complexity:* Constant.
+
+```cpp
+reverse_const_iterator rend() const noexcept;
+reverse_iterator       rend()       noexcept;
+```
+
+*Effect:* Returns an iterator to the reverse-end, overloads for const and non-const versions.
+
+*Throws:* Nothing.
+
+*Complexity:* Constant.
+
+```cpp
+const_reference front() const noexcept;
+      reference front()       noexcept;
+```
+
+*Effect:* Returns a reference to the first element of the JSON value, overloads for
+const and non-const references. Depending on the type of the JSON value:
+- `value_t::object` and `value_t::array`: the function returns a reference to the first
+   element in the underlying container.
+- primitive type (except `value_t::null`): the function returns a reference to the value.
+
+*Throws:* `std::domain_error` if the function was called on a JSON value with a type
+of `value_t::null`.
+
+*Remarks:* Calling this function on a structured JSON value (types `value_t::object` and
+`value_t::array`) with empty underlying containers, the behaviour is *undefined*.
+
+*Complexity:*
+- For primitive JSON value types (except type `value_t::null`): Constant.
+- For JSON value of type `value_t::object`, the complexity to access the first element of
+  the underlying container defined by `ObjectType`.
+- For JSON value of type `value_t::array`, the complexity to access the first element of
+  the underlying container defined by `ArrayType`.
+
+```cpp
+const_reference back() const noexcept;
+      reference back()       noexcept;
+```
+
+*Effect:* Returns a reference to the last element of the JSON value, overloads for
+const and non-const references. Depending on the type of the JSON value:
+- `value_t::object` and `value_t::array`: the function returns a reference to the last
+  element in the underlying container.
+- primitive type (except `value_t::null`): the function returns a referene to the value.
+
+*Throws:* `std::domain_error` if the function was called on a JSON vaule with a type
+of `value_t::null`.
+
+*Remarks:* Calling this function on a structured JSON value (types `value_t::object` and
+`value_t::array`) with empty underlying containers, the behaviour is *undefined*.
+
+*Complexity:*
+- For primitive JSON value types (except type `value_t::null`): Constant.
+- For JSON value of type `value_t::object`, the complexity to access the last element of
+  the underlying container defined by `ObjectType`.
+- For JSON value of type `value_t::array`, the complexity to access the last element of
+  the underlying container defined by `ArrayType`.
 
 
 <a name="class-basic_json-container-operations"></a>
