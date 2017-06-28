@@ -582,8 +582,8 @@ The return value depends on the different types and is defined as follows:
   `value_t::number_integral_signed`    | `false`
   `value_t::number_integral_unsigned`  | `false`
   `value_t::number_floating_point`     | `false`
-  `value_t::object`                    | result of function `object_t::empty()`
-  `value_t::array`                     | result of function `array_t::empty()`
+  `value_t::object`                    | result of function `object_type::empty()`
+  `value_t::array`                     | result of function `array_type::empty()`
   `value_t::discarded`                 | `false`
 
 *Remarks:* This function does not return whether a string stored as JSON value
@@ -597,7 +597,7 @@ requirements:
 
 *Throws:* Nothing.
 
-*Complexity:* Constant, as long as `array_t` and `object_t` satisfy the Container concept;
+*Complexity:* Constant, as long as `array_type` and `object_type` satisfy the Container concept;
 that is, their `empty()` functions have constant complexity.
 
 
@@ -615,8 +615,8 @@ The return value depends on the different types and is defined as follows:
   `value_t::number_integral_signed`    | `1`
   `value_t::number_integral_unsigned`  | `1`
   `value_t::number_floating_point`     | `1`
-  `value_t::object`                    | result of function `object_t::size()`
-  `value_t::array`                     | result of function `array_t::size()`
+  `value_t::object`                    | result of function `object_type::size()`
+  `value_t::array`                     | result of function `array_type::size()`
   `value_t::discarded`                 | `0`
 
 *Remarks:* This function does not return the length of a string stored as JSON
@@ -629,7 +629,7 @@ requirements:
 
 *Throws:* Nothing.
 
-*Complexity:* Constant, as long as `array_t` and `object_t` satisfy the Container concept;
+*Complexity:* Constant, as long as `array_type` and `object_type` satisfy the Container concept;
 that is, their size() functions have constant complexity.
 
 
@@ -649,8 +649,8 @@ The return value depends on the different types and is defined as follows:
   `value_t::number_integral_signed`    | `1` (same as `size()`)
   `value_t::number_integral_unsigned`  | `1` (same as `size()`)
   `value_t::number_floating_point`     | `1` (same as `size()`)
-  `value_t::object`                    | result of function `object_t::max_size()`
-  `value_t::array`                     | result of function `array_t::max_size()`
+  `value_t::object`                    | result of function `object_type::max_size()`
+  `value_t::array`                     | result of function `array_type::max_size()`
   `value_t::discarded`                 | `0` (same as `size()`)
 
 *Remarks:* This function helps `basic_json` satisfying the [Container](http://en.cppreference.com/w/cpp/concept/Container)
@@ -660,11 +660,11 @@ requirements:
 
 *Throws:* Nothing.
 
-*Complexity:* Constant, as long as `array_t` and `object_t` satisfy the Container concept;
+*Complexity:* Constant, as long as `array_type` and `object_type` satisfy the Container concept;
 that is, their `max_size()` functions have constant complexity.
 
 ```cpp
-size_type count(typename object_t::key_type key) const;
+size_type count(typename object_type::key_type key) const;
 ```
 
 *Effect:* Returns the number of occurrences of a key in a JSON object.
@@ -680,8 +680,8 @@ always be `0` (`key` was not found) or `1` (`key` was found).
 `basic_json` adds constant complexity.
 
 ```cpp
-iterator       find(typename object_t::key_type key);
-const_iterator find(typename object_t::key_type key) const;
+iterator       find(typename object_type::key_type key);
+const_iterator find(typename object_type::key_type key) const;
 ```
 
 *Effect:* Finds an element in a JSON object with key equivalent to `key`.
@@ -858,7 +858,7 @@ All iterators and references remain valid. The past-the-end iterator is invalida
 *Comlexity:* Constant.
 
 ```cpp
-void swap(array_t &);
+void swap(array_type &);
 ```
 
 *Effect:* Exchanges the contents of a JSON array with those of the specified one.
@@ -873,7 +873,7 @@ Example: `"cannot use swap() with string"`.
 *Comlexity:* Constant.
 
 ```cpp
-void swap(object_t &);
+void swap(object_type &);
 ```
 
 *Effect:* Exchanges the contents of a JSON object with those of the specified one.
@@ -888,7 +888,7 @@ Example: `"cannot use swap() with string"`.
 *Comlexity:* Constant.
 
 ```cpp
-void swap(string_t &);
+void swap(string_type &);
 ```
 
 *Effect:* Exchanges the contents of a JSON string with those of the specified one.
@@ -905,7 +905,7 @@ Example: `"cannot use swap() with boolean"`.
 ```cpp
 void push_back(basic_json &&);
 void push_back(const basic_json &);
-void push_back(const typename object_t::value_type &);
+void push_back(const typename object_type::value_type &);
 ```
 
 *Requires:* The JSON value which the data is appended to must be of type
@@ -937,7 +937,7 @@ void push_back(std::initializer_list<basic_json>);
   2. the initializer list contains only two elements, and
   3. the first element of the initializer list is a string,
 the initializer list is converted into an object element (JSON value of type `value_t::object`)
-and added using `void push_back(const typename object_t::value_type&)`. Otherwise,
+and added using `void push_back(const typename object_type::value_type&)`. Otherwise,
 the initializer list is converted to a JSON value and added using `void push_back(basic_json&&)`.
 
 *Throws:*
@@ -949,13 +949,13 @@ the initializer list is converted to a JSON value and added using `void push_bac
 *Complexity:* Linear in the size of the initializer list.
 
 *Remarks:* This function is required to resolve an ambiguous overload error,
-because pairs like `{"key", "value"}` can be both interpreted as `object_t::value_type`
+because pairs like `{"key", "value"}` can be both interpreted as `object_type::value_type`
 or `std::initializer_list<basic_json>`.
 
 ```cpp
 reference operator+=(basic_json &&);
 reference operator+=(const basic_json &);
-reference operator+=(const typename object_t::value_type &);
+reference operator+=(const typename object_type::value_type &);
 ```
 
 *Remarks:* The same requirements, effects, exceptions and complexity as
@@ -1118,7 +1118,7 @@ Either all new JSON values can be inserted or none.
 insert operation of the underlying data structure, defined by the type `ArrayType`.
 
 ```cpp
-size_type erase(const typename object_t::key_type &);
+size_type erase(const typename object_type::key_type &);
 ```
 
 *Effect:* Removes elements from a JSON value of type `value_t::object`.
@@ -1382,7 +1382,7 @@ public:
 
     reference operator[](difference_type n) const; // access to successor
 
-    typename object_t::key_type key() const; // return the key of an object iterator
+    typename object_type::key_type key() const; // return the key of an object iterator
 
     reference value() const; // return the value of an iterator
 };
