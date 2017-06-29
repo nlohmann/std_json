@@ -174,7 +174,7 @@ Speical cases like *inf* and *NaN* are not permitted.
 
 ```cpp
 namespace std {
-namespace experimental {
+inline namespace json_v1 {
 
     // generic base type basic_json
     template < /*omitted*/ >
