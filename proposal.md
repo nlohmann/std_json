@@ -702,24 +702,227 @@ that is not of type `value_t::object`.
 #### Element Access
 
 ```cpp
-// index operator
-const_reference operator[](const json_pointer &) const;
-reference operator[](const json_pointer &);
-
-// at
-const_reference at(const json_pointer &) const;
-reference at(const json_pointer &)
-
-// value access
-string_type value(
-    const json_pointer &,
-    const string_type & default_value) const;
-
-// value access to convertible type, SFINAE check to make sure
-// the type is convertible
-template <class ValueType, /* SFINAE omitted */ >
-ValueType value(const json_pointer &, ValueType default_value) const;
+const_reference operator[](size_type) const;
+      reference operator[](size_type);
 ```
+
+*Effect:* Returns a reference to an element (a JSON value itself) of a JSON value of
+type `value_t::array` at the specified index. Overloads for const and non-const versions.
+
+The non-const overload will, in case the specified index is greater or equal to `size()`,
+extend the array to a size capable of holding the specified index. All other values
+in the new array between the previous size and the new size will be filled with JSON values
+of type `value_t::null`. The reference to the newly created JSON value which is returned is
+a default constructed JSON value.
+
+The non-const overload also will convert the JSON value into a type `value_t::array`, if
+it was of type `value_t::null`.
+
+*Precondition:* The JSON value must be of type `value_t::array` or `value_t::null`.
+
+*Postcondition:* The non-const overload invalidates all iterators, pointers and references.
+
+*Remarks:*
+- No synchronization.
+- const overload: No index checks are being performed. Access to indices other than `0..size()-1`
+  are undefined behaviour.
+
+*Throws:* `std::domain_error` if the type of the JSON value is diffrent than `value_t::array`
+or `value_t::null`.
+
+*Complexity:*
+- const overload: The complexity of a random element access of the underlying data structure
+defined by `ArrayType`. Constant overhead by `basic_json`.
+- non-const overload: If the specified index is in the range `0..size()-1`, it is the same
+complexity as the const overload. If not, it is the same complexity as for the underlying
+data structure defined by `ArrayType` to create a container of sufficient size.
+Constant overhead by `basic_json`.
+
+```cpp
+const_reference operator[](const typename object_type::key_type &) const;
+      reference operator[](const typename object_type::key_type &);
+```
+
+*Effects:* Returns a reference to an element (a JSON value itself) of a JSON value of
+type `value_t::object` for the specified key. Overloads for const and non-const versions.
+
+The non-const overload will, in case the specified key is not present in the JSON value,
+default construct a JSON value for the key and return the reference to it.
+
+The non-const overload also will convert the JSON value into a type `value_t::object`, if
+it was of type `value_t::null`.
+
+*Precondition:* The JSON value must be of type `value_t::object` or `value_t::null`.
+
+*Postcondition:* The non-const overload invalidates all iterators, pointers and references.
+
+*Remarks:*
+- No synchronization.
+- const overload: No checks are being performed. Specifying a non-existent key is undefined
+  behaviour.
+
+*Throws:*
+- const overlaod: `std::domain_error` if the type of the JSON value is diffrent than `value_t::object`.
+- non-const overload:  `std::domain_error` if the type of the JSON value is diffrent than
+  `value_t::object` or `value_t::null`.
+
+*Complexity:*
+- const overload: The complexity of an element access of the underlying data structure
+  defined by `ObjectType`. Constant overhead by `basic_json`.
+- non-const overload: If the specified key exists, it is the same complexity as the const overload.
+  If not, it is the same complexity as for the underlying data structure defined by `ObjectType` to
+  create a container and the element for the corresponding key. Constant overhead by `basic_json`.
+
+```cpp
+// TODO
+template <typename T> const_reference operator[](T *) const;
+template <typename T>       reference operator[](T *);
+
+template <typename T, std::size_t N> const_reference operator[](T * (&key)[N]) const;
+template <typename T, std::size_t N>       reference operator[](T * (&key)[N]);
+```
+
+```cpp
+const_reference operator[](const json_pointer &) const;
+      reference operator[](const json_pointer &);
+```
+
+*Effect:* Returns a reference to a JSON value specified by the JSON pointer.
+Overloads for const and non-const versions.
+
+The non-const overload will insert the requested JSON value, in particular:
+- If the JSON pointer points to an object key which does not exist, the JSON value
+  is default constructed.
+  If the JSON value on which the member function is called upon is of type `value_t::null`,
+  it will be converted to `value_t::object`.
+- If the JSON pointer points to array index which does not exist, the array will
+  be expanded to a be able to hold the specified index. All newly created JSON values
+  in the array are constructed and of type `value_t::null`. The JSON value at the
+  specified index is default constructed.
+  If the JSON value on which the member function is called upon is of type `value_t::null`,
+  it will be converted to `value_t::array`.
+- The JSON pointer special value `-` is treated as array index past the last existing,
+  i.e. appending to the existing array.
+  If the JSON value on which the member function is called upon is of type `value_t::null`,
+  it will be converted to `value_t::array`.
+
+*Postcondition:* The non-const overload invalidates all iterators, pointers and references.
+
+*Remarks:*
+- No bounds checking is performed.
+- No synchronization.
+
+*Throws:*
+- `std::out_of_range` is thrown if the JSON pointer can not be resolved.
+- `std::domain_error` is thrown in case of an array index of `0`.
+- `std::domain_error` is thrown in the const overload with a JSON pointer special
+  value of `-`.
+- `std::invalid_argument` is thrown in case of a non-numerical array index.
+
+*Complexity:*
+- const overload: The complexity of an element access of the underlying data structure
+  defined by `ObjectType` or `ArrayType`, constant for primitive types.
+  Constant overhead by `basic_json`.
+- non-const overload: If the specified key exists, it is the same complexity as the const overload.
+  If not, it is the same complexity as for the underlying data structure defined by `ObjectType`
+  or `ArrayType` to create a container and the element for the corresponding key or index.
+  Constant for primitive types. Constant overhead by `basic_json`.
+
+```cpp
+const_reference at(size_type) const;
+      reference at(size_type);
+```
+
+*Effect:* Returns a reference to the element specified by an array index.
+Overloads for const and non-const versions.
+
+*Precondition:* The JSON value which this member function is called upon must be of
+type `value_t::array`.
+
+*Remarks:*
+- Performs bound checks.
+- No synchronization.
+
+*Throws:*
+- `std::domain_error` if the JSON value is not of type `value_t::array`.
+- `std::out_of_range` if the specified index is not within the range `0..size()-1`.
+
+*Complexity:* The same as for a random access of the underlying data structure defined
+by `ArrayType`. Constant overhead by `basic_json`.
+
+```cpp
+const_reference at(const typename object_type::key_type &) const;
+      reference at(const typename object_type::key_type &);
+```
+
+*Effect:* Returns a reference to the element for the specified key.
+Overloads for const and non-const versions.
+
+*Precondition:* The JSON value which this member function is called upon must be of
+type `value_t::object`.
+
+*Remarks:*
+- Performs bound checks.
+- No synchronization.
+
+*Throws:*
+- `std::domain_error` if the JSON value is not of type `value_t::object`.
+- `std::out_of_range` if the specified key does not exist, equivalent to `find(key)==end()`.
+
+*Complexity:* The same as for finding an element with a specified key of the underlying data
+structure defined by `ObjectType`. Constant overhead by `basic_json`.
+
+```cpp
+const_reference at(const json_pointer &) const;
+      reference at(const json_pointer &);
+```
+
+*Effect:* Returns a reference to the element specified by the JSON pointer.
+Overloads for const and non-const versions.
+
+*Remarks:*
+- Performs bound checks.
+- No synchronization.
+
+*Throws:*
+- `std::out_of_range` if the JSON pointer can not be resolved.
+- `std::domain_error` if an array index begins with `0`.
+- `std::domain_error` if the JSON pointer holds the special value `-`.
+- `std::invalid_argument` is thrown in case of a non-numerical array index.
+
+*Complexity:* The complexity of an element access of the underlying data structure
+defined by `ObjectType` or `ArrayType`, constant for primitive types.
+Constant overhead by `basic_json`.
+
+```cpp
+template <class ValueType, /*SFINAE omitted*/ >
+ValueType value(const typename object_type::key_type &, ValueType default_value) const;
+
+string_type value(const typename object_type::key_type &, const char * default_value) const;
+
+template <class ValueType, /*SFINAE omitted*/ >
+ValueType value(const json_pointer &, ValueType default_value) const;
+
+string_type value(const json_pointer &, const char * default_value) const;
+```
+
+*Effect:* Returns a copy of the data of an JSON value specified by a key or a default value,
+if the key does not exist within the called JSON value of type `value_t::object`.
+
+The JSON value to be found must be convertible into `ValueType`.
+
+There is an overload specialized for `const char *` returning a `StringType`.
+
+There is also an overload pair which takes a JSON path instead of an object key. If the
+JSON pointer can not be resolved, the default value is returned.
+
+*Remarks:* No synchronization.
+
+*Throws:* `std::domain_error` if the JSON value which the member function is called upon is not
+  of type `value_t::object`.
+
+*Complexity:* The same complexity af for the underlying data structure defined by `ObjectType`
+to find an element. Constant overhead by `basic_json`.
 
 
 <a name="class-basic_json-container-access"></a>
@@ -1155,7 +1358,7 @@ from a JSON value of type `value_t::array`.
 the underlying data structure.
 
 ```cpp
-template<class IteratorType, /* SFINAE omitted */ > IteratorType erase(IteratorType pos);
+template<class IteratorType, /*SFINAE omitted*/ > IteratorType erase(IteratorType pos);
 ```
 
 *Effects:* Erases the element from the JSON value at the position specified by the iterator.
@@ -1189,7 +1392,7 @@ Depending on the type of the JSON value:
 - others: Constant.
 
 ```cpp
-template<class IteratorType, /* SFINAE omitted */ > IteratorType erase(IteratorType first, IteratorType last);
+template<class IteratorType, /*SFINAE omitted*/ > IteratorType erase(IteratorType first, IteratorType last);
 ```
 
 *Effect:* Erases all elments from the JSON value specified by the range `[first, last)`.
