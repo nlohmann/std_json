@@ -39,6 +39,12 @@ It proposes a library extension.
   - [Nested Class `basic_json::const_reverse_iterator`](#class-const_reverse_iterator)
   - [Nested Class `basic_json::reverse_iterator`](#class-reverse_iterator)
   - [Nested Class `basic_json::json_pointer`](#class-json_pointer)
+  - [Free Functions `to_json`](#func-to_json)
+  - [Free Functions `from_json`](#func-from_json)
+  - [User Defined Literals](#func-user-defined-literals)
+  - [Free Factory Functions](#func-factory)
+  - [Template Function Specialization `swap`](#func-swap)
+  - [Template Specialization `hash`](#func-hash)
 - [Acknowledgements](#acknowledgements)
 - [References](#references)
 
@@ -177,29 +183,33 @@ namespace std {
 inline namespace json_v1 {
 
     // generic base type basic_json
-    template < /*omitted*/ >
-    class basic_json;
+    template < /*omitted*/ > class basic_json;
 
-    // swap function
-    template < /*omitted*/ >
-    void swap(basic_json &, basic_json &);
+    // function templates `to_json` for various types, customization points
+    // ...
 
-    // hash
-    template < /*omitted*/ >
-    struct hash<basic_json>
-    {
-        std::size_t operator()(const basic_json &) const;
-    };
+    // function templates `from_json` for various types, customization points
+    // ...
 
-    // creation functions: TODO
+    // factory functions
     template < /*omitted*/ > basic_json make_json( /*omitted*/ );
 
     // default json object class
     using json = basic_json<>;
 
-    // user defined string literal
-    json operator "" _json(const char *, std::size_t);
+    // user defined literals
+    json               operator "" _json(const char *, std::size_t);
+	json::json_pointer operator "" _json_pointer(const char *, std::size_t);
 }
+
+    // swap
+    template <> void swap(json_v1::json &, json_v1::json &);
+
+    // hash
+    template <> struct hash<json_v1::json>
+    {
+    	std::size_t operator()(const json_v1::basic_json &) const;
+    };
 }
 ```
 
@@ -307,79 +317,212 @@ enum class value_t : /*unspecified*/
 basic_json() noexcept;
 ```
 
-Default constructor.
+*Effect:* Default constructor.
 
 *Postcondition:* The type of the JSON value is `value_t::null`.
+
+*Remarks:* Is trivially default constructible.
 
 *Throws:* Nothing.
 
 ```cpp
-// explicit type construction, default content
 explicit basic_json(value_t) noexcept;
 ```
 
-Constructs explicitly an object representing a JSON value of the specified type.
-The underlying data type (see template parameters) must be default constructible
-and `noexcept`.
+*Effect:* Constructs an empty JSON value with the specified type. The contained data
+will be initialized, according to the following table:
+
+  Type                       | Value
+  -------------------------- | ----------
+  `value_t::null`            | -
+  `value_t::object`          | Default constructed container of type `ObjectType`
+  `value_t::array`           | Default constructed container of type `ArrayType`
+  `value_t::string`          | Default constructed string of type `StringType`
+  `value_t::boolean`         | `false`
+  `value_t::number_integer`  | `0`
+  `value_t::number_unsigned` | `0`
+  `value_t::number_float`    | `0.0`
+  `value_t::discarded`       | -
+
+*Throws:* Nothing.
+
+*Complexity:* Constant.
 
 ```cpp
-// explicit null content construction
 basic_json(std::nullptr) noexcept;
 ```
 
-Constructs an empty JSON value of type `value_t::null`.
+*Effect:* Constructs an empty JSON value of type `value_t::null`.
 
 *Remarks:* Has the same effect as the default constructor.
 
 *Throws:* Nothing.
 
 ```cpp
-// construction from various value types
-basic_json(string_type);
-basic_json(boolean_type) noexcept;
-basic_json(integral_signed_type) noexcept;
-basic_json(integral_unsigned_type) noexcept;
-basic_json(floating_point_type) noexcept;
-basic_json(object_type);
-basic_json(array_type);
+template <typename CompatibleType, /*omitted*/ >
+basic_json(CompatibleType &&) noexcept( /*omitted*/ );
 ```
 
-Constructs a JSON value of the respective type, initialized with the
-specified data.
+*Effect:* Constructs a JSON value from the specified data. This constructor utilizes
+the `to_json` functions, which act as a customization point. The specified argument
+is forwarded.
 
-*Postcondition:* JSON value is constructed, containing the specified data.
+*Preconditions:*
+- In order to be compatible, a function `to_json` must exist for the specific type.
+  See chapter [Free Functions `to_json`](#func-to_json).
+- Not allowed for `CompatibleType` are:
+  - `basic_json`, to avoid hijacking copy/move constructors.
+  - Nested types of `basic_json`.
+
+*Postcondition:* If not exception was thrown, the constructed JSON value has a valid
+type, e.g. any of `value_t`.
 
 ```cpp
-// construction using initializer list
-basic_json(std::initializer_list<basic_json>);
-```
-
-Constructs a JSON value containing the data from the specified initializer
-list. The resulting type of the JSON value is `value_t::object`.
-
-```cpp
-// array construction with specified number of elements
 basic_json(size_type count, const basic_json & value);
 ```
 
-Constructs a JSON value with `count` number of elements of the specified
+*Effect:* Constructs a JSON value with `count` number of elements of the specified
 JSON value. The resulting type of the current object is `value_t::array`.
 
+*Postcondition:*
+- The JSON value is of type `value_t::array` and contains `count` copies
+  of the specified value.
+- If the specified `count` is `0`, the resulting JSON value is of type `value_t::array`,
+  with an empty container.
+
+*Throws:* `std::bad_alloc` if the container to hold the copies could not be constructed.
+
+*Complexity:* Linear in number of elements.
+
 ```cpp
-// construction from iterators
-template <typename InputIterator>
+template <typename InputIterator, /*SFINAE omitted*/ >
 basic_json(InputIterator first, InputIterator last);
 ```
 
+*Effect:* Constructs a JSON value from another JSON value with copying data in the specified
+range `[first,last)`.
+
+*Precondition:*
+- `InputIterator` must be one of the following types:
+  - `basic_json::iterator`
+  - `basic_json::const_iterator`
+- Both specified iterators must be valid, i.e. originate from the same JSON value.
+- If the iterators originate from a primitive JSON value, `first` must be the
+  result of `origin.begin()` and `last` must be the result of `origin.end()`.
+
+*Throws:*
+- `std::domain_error` if the iterators are not compatible according to the preconditions.
+- `std::domain_error` if the iterators originate from a JSON value of type `value_t::null`.
+- `std::out_of_range` if the iterators originate from a primitive JSON value and do
+  not meet the precondition for `first` and `last`.
+- `std::bad_alloc` if the allocation of memory for the types `value_t::object`, `value_t::array`
+  or `value_t::string` failes.
+
+*Complexity:*
+- For structured types (`value_t::object`, `value_t::array`): linear in number of number
+  of elements in the range `[first,last)`.
+- For primitive types: constant.
+
 ```cpp
-// copy constructor, non-converting
 basic_json(const basic_json &);
 ```
 
+*Effect:* Copy constructor.
+
+*Throws:* `std::bad_alloc` if the allocation for object, array and string type failed.
+Will never be thrown if the specified JSON value is primitive.
+
 ```cpp
-// move constructor, non-converting
-basic_json(basic_json &&);
+basic_json(basic_json &&) noexcept;
 ```
+
+*Effect:* Move constructor.
+
+*Postcondition:* The moved-from JSON value will be left as type `value_t::null`.
+
+*Throws:* Nothing.
+
+*Complexity:* Constant.
+
+```cpp
+basic_json(std::initializer_list<basic_json> init,
+           bool automatic_type_deduction = true,
+           value_t type_override = value_t::array);
+```
+
+*Effect:* Constructs a JSON value initalized with the specified parameters.
+The type of the JSON value will be `value_t::array` or `value_t::object`, depending on the
+specified of the parameters, according to the following rules:
+
+1. If the initializer list is empty, an empty JSON value of type `value_t::object` is created.
+2. If the initializer list consists of pairs whose first element is a string, a JSON value
+   of type `value_t::object` is created, containing elements constructed from the pairs,
+   with their first value (string) as key and the second value as data.
+3. In all other cases, a JSON value of type `value_t::array` is created, containing copies
+   of the elements in the initializer list.
+
+The rules aim to create the best fit between a C++ initializer list and
+JSON values. The rationale is as follows:
+
+- The empty initializer list is written as `{}`, which is exactly an empty JSON object.
+- C++ has no way of describing mapped types other than to list a list of pairs. As JSON
+  requires that keys must be of type string, rule 2 is the weakest constraint one can pose
+  on initializer lists to interpret them as an object.
+- In all other cases, the initializer list could not be interpreted as JSON object type,
+  so interpreting it as JSON array type is safe.
+
+Using the parameters, it is possible to control the construction of the JSON value manually.
+The parameter `automatic_type_deduction` controls weather or not the resulting type is enforced.
+The value of the parameter `automatic_type_deduction` controls the following behaviour:
+- `true`: the constructor uses the rules above to determine the type for the JSON
+  value (`value_t::object` or `value_t::array).
+- `false`: the constructor tries to use the type defined by `type_override`, which must be
+  either `value_t::object` or `value_t::array`. If it is `value_t::object`, rule 2 must
+  be valid or an exception is thrown.
+
+*Throws:*
+- `std::domain_error`: if the constructor is forced to construct a JSON value of
+  type `value_t::object`, but is unable to because the initializer list does not contain
+  pairs with the first element (key) a string.
+- `std::bad_alloc`: if the underlying container can not be constructed, containing copies
+  of the elements in the initializer list.
+
+*Complexity:* The same complexity to create the underlying data structure defined
+by `ArrayType` or `ObjectType`, and linear time in size of the initializer list. 
+
+```cpp
+static basic_json array(std::initializer_list<basic_json> = std::initializer_list<basic_json>{});
+```
+
+*Effect:* Factory method. Creates and returns a JSON value of type `value_t::array` containing
+the elements specified by the initializer list, containing JSON values.
+
+*Remarks:* This member function is needed to disambiguate the creation of JSON values of
+type `value_t::array` and `value_t::object` for empty initializer lists and initializer lists
+containing pairs.
+
+*Complexity:* The same complexity to create the underlying data structure defined by `ArrayType`
+and linear time in size of the initializer list. 
+
+```cpp
+static basic_json object(std::initializer_list<basic_json> = std::initializer_list<basic_json>{});
+```
+
+*Effect:* Factory method. Creates and returns a JSON value of type `value_t::object` containing
+the elements specified by the initializer list, containing JSON values.
+
+The initializer list must contain pairs, the type of the first element must be a string.
+
+*Remarks:* This member function is needed to disambiguate the creation of JSON values of
+type `value_t::array` and `value_t::object` for empty initializer lists and initializer lists
+containing pairs.
+
+*Throws:*
+- `std::domain_error` if the a key of the key-value pairs is not a string.
+  it is not possible to create all pairs.
+
+*Complexity:* The same complexity to create the underlying data structure defined by `ObjectType`
+and linear time in size of the initializer list. 
 
 
 <a name="class-basic_json-destruction"></a>
@@ -389,20 +532,27 @@ basic_json(basic_json &&);
 ~basic_json();
 ```
 
-Destructs its containing data. Contained JSON values (objects, arrays) are
-being destroyed as well.
+*Effect:* Destroys the JSON value and frees all allocated memory.
 
 
 <a name="class-basic_json-modifying-operators"></a>
 #### Modifying Operators
 
 ```cpp
-// copy assignment operator, non-converting
-basic_json & operator=(const basic_json &);
-
-// move assignment operator, non-converting
-basic_json & operator=(basic_json &&);
+basic_json & operator=(const basic_json &) noexcept( /*omitted*/ );
 ```
+
+*Effect:* Copy assignment operator.
+
+*Complexity:* Linear.
+
+```cpp
+basic_json & operator=(basic_json &&) noexcept( /*omitted*/ );
+```
+
+*Effect:* Move assignment operator.
+
+*Complexity:* Linear.
 
 
 <a name="class-basic_json-non-modifying-operators"></a>
@@ -774,13 +924,14 @@ it was of type `value_t::null`.
   create a container and the element for the corresponding key. Constant overhead by `basic_json`.
 
 ```cpp
-// TODO
 template <typename T> const_reference operator[](T *) const;
 template <typename T>       reference operator[](T *);
 
 template <typename T, std::size_t N> const_reference operator[](T * (&key)[N]) const;
 template <typename T, std::size_t N>       reference operator[](T * (&key)[N]);
 ```
+
+**TODO**
 
 ```cpp
 const_reference operator[](const json_pointer &) const;
@@ -1683,6 +1834,42 @@ private:
     std::vector<std::string> reference_tokens {};
 };
 ```
+
+
+<a name="func-to_json"></a>
+### Free Functions `to_json`
+
+**TODO**
+
+
+<a name="func-from_json"></a>
+### Free Functions `from_json`
+
+**TODO**
+
+
+<a name="func-factory"></a>
+### Free Factory Functions
+
+**TODO**
+
+
+<a name="func-user-defined-literals"></a>
+### User Defined Literals
+
+**TODO**
+
+
+<a name="func-swap"></a>
+### Template Function Specialization `swap`
+
+**TODO**
+
+
+<a name="func-hash"></a>
+### Template Specialization `hash`
+
+**TODO**
 
 
 <a name="acknowledgements"></a>
