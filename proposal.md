@@ -199,7 +199,7 @@ inline namespace json_v1 {
 
     // user defined literals
     json               operator "" _json(const char *, std::size_t);
-	json::json_pointer operator "" _json_pointer(const char *, std::size_t);
+    json::json_pointer operator "" _json_pointer(const char *, std::size_t);
 }
 
     // swap
@@ -208,7 +208,7 @@ inline namespace json_v1 {
     // hash
     template <> struct hash<json_v1::json>
     {
-    	std::size_t operator()(const json_v1::basic_json &) const;
+        std::size_t operator()(const json_v1::basic_json &) const;
     };
 }
 ```
@@ -1595,16 +1595,12 @@ friend std::isteram & operator>>(std::istream & basic_json &);
 <a name="class-const_iterator"></a>
 ### Nested Class `basic_json::const_iterator`
 
-Satisfies:
-
-- RandomAccessIterator
-- OutputIterator
 
 ```cpp
-class const_iterator : public std::iterator< /*omitted */ >
+class const_iterator
 {
 public:
-    // types
+    // iterator traits
     using value_type        = typename basic_json::value_type;
     using difference_type   = typename basic_json::difference_type;
     using const_reference   = typename basic_json::const_reference;
@@ -1626,7 +1622,7 @@ public:
 
     // element access operators
     const_reference operator*() const;
-    const_poitner operator->() const;
+    const_pointer   operator->() const;
 
     // movement operators
     const_iterator & operator++();    // pre-increment
@@ -1670,7 +1666,7 @@ public:
 
     // element access operators
     reference operator*() const;
-    poitner operator->() const;
+    pointer   operator->() const;
 
     // movement operators
     iterator & operator++();    // pre-increment
