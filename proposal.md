@@ -33,11 +33,6 @@ It proposes a library extension.
     - [Container Access](#class-basic_json-container-access)
     - [Container Operations](#class-basic_json-container-operations)
     - [Serialization / Deserialization](#class-basic_json-serialization)
-  - [Nested Class `basic_json::const_iterator`](#class-const_iterator)
-  - [Nested Class `basic_json::iterator`](#class-iterator)
-  - [Nested Class `basic_json::json_reverse_iterator`](#class-json_reverse_iterator)
-  - [Nested Class `basic_json::const_reverse_iterator`](#class-const_reverse_iterator)
-  - [Nested Class `basic_json::reverse_iterator`](#class-reverse_iterator)
   - [Nested Class `basic_json::json_pointer`](#class-json_pointer)
   - [Free Functions `to_json`](#func-to_json)
   - [Free Functions `from_json`](#func-from_json)
@@ -261,11 +256,11 @@ public:
 
     // nested classes and types
 
-    template <typename Base> class json_reverse_iterator;
-    class const_iterator;
-    class iterator;
-    class const_reverse_iterator;
-    class reverse_iterator;
+    class const_iterator          = /*implementation defined*/ ;
+    class iterator                = /*implementation defined*/ ;
+    class const_reverse_iterator  = /*implementation defined*/ ;
+    class reverse_iterator        = /*implementation defined*/ ;
+
     class json_pointer;
 
     enum class value_t /*omitted*/;
@@ -1589,169 +1584,6 @@ friend std::ostream & operator<<(std::ostream & const basic_json &);
 
 // input stream
 friend std::isteram & operator>>(std::istream & basic_json &);
-```
-
-
-<a name="class-const_iterator"></a>
-### Nested Class `basic_json::const_iterator`
-
-
-```cpp
-class const_iterator
-{
-public:
-    // iterator traits
-    using value_type        = typename basic_json::value_type;
-    using difference_type   = typename basic_json::difference_type;
-    using const_reference   = typename basic_json::const_reference;
-    using reference         = typename basic_json::const_reference;
-    using const_pointer     = typename basic_json::const_pointer;
-    using pointer           = typename basic_json::const_pointer;
-    using iterator_category = std::bidirectional_iterator_tag;
-
-    // construction
-    const_iterator();
-    const_iterator(const const_iterator &) noexcept;
-    const_iterator(const_iterator &&) noexcept;
-
-    explicit const_iterator(const iterator &) noexcept;
-
-    // assignment operators
-    const_iterator & operator=(const const_iterator &) noexcept;
-    const_iterator & operator=(const_iterator &&) noexcept;
-
-    // element access operators
-    const_reference operator*() const;
-    const_pointer   operator->() const;
-
-    // movement operators
-    const_iterator & operator++();    // pre-increment
-    const_iterator   operator++(int); // post-increment
-
-    const_iterator & operator--();    // pre-decrement
-    const_iterator   operator--(int); // post-decrement
-
-    const_iterator & operator+=(difference_type);
-    const_iterator & operator-=(difference_type);
-
-    const_iterator operator+(difference_type);
-    const_iterator operator-(difference_type);
-
-    // comparison operators
-    bool operator==(const const_iterator &) const;
-    bool operator!=(const const_iterator &) const;
-    bool operator<=(const const_iterator &) const;
-    bool operator< (const const_iterator &) const;
-    bool operator>=(const const_iterator &) const;
-    bool operator> (const const_iterator &) const;
-};
-```
-
-
-<a name="class-iterator"></a>
-### Nested Class `basic_json::iterator`
-
-```cpp
-class iterator : public const_iterator
-{
-public:
-    // construction
-    iterator();
-    iterator(const iterator &) noexcept;
-    iterator(iterator &&) noexcept;
-
-    // assignment operators
-    iterator & operator=(const iterator &) noexcept;
-    iterator & operator=(iterator &&) noexcept;
-
-    // element access operators
-    reference operator*() const;
-    pointer   operator->() const;
-
-    // movement operators
-    iterator & operator++();    // pre-increment
-    iterator   operator++(int); // post-increment
-
-    iterator & operator--();    // pre-decrement
-    iterator   operator--(int); // post-decrement
-
-    iterator & operator+=(difference_type);
-    iterator & operator-=(difference_type);
-
-    iterator operator+(difference_type);
-    iterator operator-(difference_type);
-};
-```
-
-
-<a name="class-json_reverse_iterator"></a>
-### Nested Class `basic_json::json_reverse_iterator`
-
-```cpp
-template<typename Base>
-class json_reverse_iterator : public std::reverse_iterator<Base>
-{
-public:
-    // types
-
-    // shortcut to the reverse iterator adaptor
-    using base_iterator = std::reverse_iterator<Base>;
-
-    // the reference type for the pointed-to element
-    using reference = typename Base::reference;
-
-    // construction
-
-    // create reverse iterator from iterator
-    json_reverse_iterator(const typename base_iterator::iterator_type & it) noexcept;
-
-    // create reverse iterator from base class
-    json_reverse_iterator(const base_iterator & it) noexcept;
-
-    // movement operators
-
-    json_reverse_iterator   operator++(int);  // post-increment (it++)
-    json_reverse_iterator & operator++();     // pre-increment (++it)
-
-    json_reverse_iterator   operator--(int);  // post-decrement (it--)
-    json_reverse_iterator & operator--();     // pre-decrement (--it)
-
-    // add to iterator
-    json_reverse_iterator & operator+=(difference_type i);
-
-    // add to iterator
-    json_reverse_iterator operator+(difference_type i) const;
-
-    // subtract from iterator
-    json_reverse_iterator operator-(difference_type i) const;
-
-    // return difference
-    difference_type operator-(const json_reverse_iterator & other) const;
-
-    // access member functions
-
-    reference operator[](difference_type n) const; // access to successor
-
-    typename object_type::key_type key() const; // return the key of an object iterator
-
-    reference value() const; // return the value of an iterator
-};
-```
-
-
-<a name="class-const_reverse_iterator"></a>
-### Nested Class `basic_json::const_reverse_iterator`
-
-```cpp
-using const_reverse_iterator = json_reverse_iterator<typename basic_json::const_iterator>;
-```
-
-
-<a name="class-reverse_iterator"></a>
-### Nested Class `basic_json::reverse_iterator`
-
-```cpp
-using reverse_iterator = json_reverse_iterator<typename basic_json::iterator>;
 ```
 
 
