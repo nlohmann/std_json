@@ -22,8 +22,8 @@ It proposes a library extension.
 - [Terminology](#terminology)
 - [Technical Specification](#tech-spec)
   - [Header `<json>` synopsis](#header-synopsis)
+  - [Enumeration `json_type`](#enum-json_type)
   - [Class Template `basic_json`](#class-basic_json)
-    - [Enumeration `value_t`](#class-basic_json-enum-value_t)
     - [Construction](#class-basic_json-construction)
     - [Destruction](#class-basic_json-destruction)
     - [Modifying Operators](#class-basic_json-modifying-operators)
@@ -177,6 +177,9 @@ Speical cases like *inf* and *NaN* are not permitted.
 namespace std {
 inline namespace json_v1 {
 
+    // JSON value types
+    enum class json_type /*omitted*/;
+
     // generic base type basic_json
     template < /*omitted*/ > class basic_json;
 
@@ -206,6 +209,25 @@ inline namespace json_v1 {
         std::size_t operator()(const json_v1::basic_json &) const;
     };
 }
+```
+
+
+<a name="enum-json_type"></a>
+### Enumeration `json_type`
+
+```cpp
+enum class json_type : /*unspecified*/
+{
+    null                     = /*unspecified*/ ,
+    object                   = /*unspecified*/ ,
+    array                    = /*unspecified*/ ,
+    string                   = /*unspecified*/ ,
+    boolean                  = /*unspecified*/ ,
+    number_integral_signed   = /*unspecified*/ ,
+    number_integral_unsigned = /*unspecified*/ ,
+    number_floating_point    = /*unspecified*/ ,
+    discarded                = /*unspecified*/
+};
 ```
 
 
@@ -263,8 +285,6 @@ public:
 
     class json_pointer;
 
-    enum class value_t /*omitted*/;
-
     // constructors ...
 
     // destructor ...
@@ -286,25 +306,6 @@ public:
 ```
 
 
-<a name="class-basic_json-enum-value_t"></a>
-#### Enumeration `value_t`
-
-```cpp
-enum class value_t : /*unspecified*/
-{
-    null                     = /*unspecified*/ ,
-    object                   = /*unspecified*/ ,
-    array                    = /*unspecified*/ ,
-    string                   = /*unspecified*/ ,
-    boolean                  = /*unspecified*/ ,
-    number_integral_signed   = /*unspecified*/ ,
-    number_integral_unsigned = /*unspecified*/ ,
-    number_floating_point    = /*unspecified*/ ,
-    discarded                = /*unspecified*/
-};
-```
-
-
 <a name="class-basic_json-construction"></a>
 #### Construction
 
@@ -314,14 +315,14 @@ basic_json() noexcept;
 
 *Effect:* Default constructor.
 
-*Postcondition:* The type of the JSON value is `value_t::null`.
+*Postcondition:* The type of the JSON value is `json_type::null`.
 
 *Remarks:* Is trivially default constructible.
 
 *Throws:* Nothing.
 
 ```cpp
-explicit basic_json(value_t) noexcept;
+explicit basic_json(json_type) noexcept;
 ```
 
 *Effect:* Constructs an empty JSON value with the specified type. The contained data
@@ -329,15 +330,15 @@ will be initialized, according to the following table:
 
   Type                       | Value
   -------------------------- | ----------
-  `value_t::null`            | -
-  `value_t::object`          | Default constructed container of type `ObjectType`
-  `value_t::array`           | Default constructed container of type `ArrayType`
-  `value_t::string`          | Default constructed string of type `StringType`
-  `value_t::boolean`         | `false`
-  `value_t::number_integer`  | `0`
-  `value_t::number_unsigned` | `0`
-  `value_t::number_float`    | `0.0`
-  `value_t::discarded`       | -
+  `json_type::null`            | -
+  `json_type::object`          | Default constructed container of type `ObjectType`
+  `json_type::array`           | Default constructed container of type `ArrayType`
+  `json_type::string`          | Default constructed string of type `StringType`
+  `json_type::boolean`         | `false`
+  `json_type::number_integer`  | `0`
+  `json_type::number_unsigned` | `0`
+  `json_type::number_float`    | `0.0`
+  `json_type::discarded`       | -
 
 *Throws:* Nothing.
 
@@ -347,7 +348,7 @@ will be initialized, according to the following table:
 basic_json(std::nullptr) noexcept;
 ```
 
-*Effect:* Constructs an empty JSON value of type `value_t::null`.
+*Effect:* Constructs an empty JSON value of type `json_type::null`.
 
 *Remarks:* Has the same effect as the default constructor.
 
@@ -370,19 +371,19 @@ is forwarded.
   - Nested types of `basic_json`.
 
 *Postcondition:* If not exception was thrown, the constructed JSON value has a valid
-type, e.g. any of `value_t`.
+type, e.g. any of `json_type`.
 
 ```cpp
 basic_json(size_type count, const basic_json & value);
 ```
 
 *Effect:* Constructs a JSON value with `count` number of elements of the specified
-JSON value. The resulting type of the current object is `value_t::array`.
+JSON value. The resulting type of the current object is `json_type::array`.
 
 *Postcondition:*
-- The JSON value is of type `value_t::array` and contains `count` copies
+- The JSON value is of type `json_type::array` and contains `count` copies
   of the specified value.
-- If the specified `count` is `0`, the resulting JSON value is of type `value_t::array`,
+- If the specified `count` is `0`, the resulting JSON value is of type `json_type::array`,
   with an empty container.
 
 *Throws:* `std::bad_alloc` if the container to hold the copies could not be constructed.
@@ -407,14 +408,14 @@ range `[first,last)`.
 
 *Throws:*
 - `std::domain_error` if the iterators are not compatible according to the preconditions.
-- `std::domain_error` if the iterators originate from a JSON value of type `value_t::null`.
+- `std::domain_error` if the iterators originate from a JSON value of type `json_type::null`.
 - `std::out_of_range` if the iterators originate from a primitive JSON value and do
   not meet the precondition for `first` and `last`.
-- `std::bad_alloc` if the allocation of memory for the types `value_t::object`, `value_t::array`
-  or `value_t::string` failes.
+- `std::bad_alloc` if the allocation of memory for the types `json_type::object`, `json_type::array`
+  or `json_type::string` failes.
 
 *Complexity:*
-- For structured types (`value_t::object`, `value_t::array`): linear in number of number
+- For structured types (`json_type::object`, `json_type::array`): linear in number of number
   of elements in the range `[first,last)`.
 - For primitive types: constant.
 
@@ -433,7 +434,7 @@ basic_json(basic_json &&) noexcept;
 
 *Effect:* Move constructor.
 
-*Postcondition:* The moved-from JSON value will be left as type `value_t::null`.
+*Postcondition:* The moved-from JSON value will be left as type `json_type::null`.
 
 *Throws:* Nothing.
 
@@ -442,18 +443,18 @@ basic_json(basic_json &&) noexcept;
 ```cpp
 basic_json(std::initializer_list<basic_json> init,
            bool automatic_type_deduction = true,
-           value_t type_override = value_t::array);
+           json_type type_override = json_type::array);
 ```
 
 *Effect:* Constructs a JSON value initalized with the specified parameters.
-The type of the JSON value will be `value_t::array` or `value_t::object`, depending on the
+The type of the JSON value will be `json_type::array` or `json_type::object`, depending on the
 specified of the parameters, according to the following rules:
 
-1. If the initializer list is empty, an empty JSON value of type `value_t::object` is created.
+1. If the initializer list is empty, an empty JSON value of type `json_type::object` is created.
 2. If the initializer list consists of pairs whose first element is a string, a JSON value
-   of type `value_t::object` is created, containing elements constructed from the pairs,
+   of type `json_type::object` is created, containing elements constructed from the pairs,
    with their first value (string) as key and the second value as data.
-3. In all other cases, a JSON value of type `value_t::array` is created, containing copies
+3. In all other cases, a JSON value of type `json_type::array` is created, containing copies
    of the elements in the initializer list.
 
 The rules aim to create the best fit between a C++ initializer list and
@@ -470,14 +471,14 @@ Using the parameters, it is possible to control the construction of the JSON val
 The parameter `automatic_type_deduction` controls weather or not the resulting type is enforced.
 The value of the parameter `automatic_type_deduction` controls the following behaviour:
 - `true`: the constructor uses the rules above to determine the type for the JSON
-  value (`value_t::object` or `value_t::array).
+  value (`json_type::object` or `json_type::array).
 - `false`: the constructor tries to use the type defined by `type_override`, which must be
-  either `value_t::object` or `value_t::array`. If it is `value_t::object`, rule 2 must
+  either `json_type::object` or `json_type::array`. If it is `json_type::object`, rule 2 must
   be valid or an exception is thrown.
 
 *Throws:*
 - `std::domain_error`: if the constructor is forced to construct a JSON value of
-  type `value_t::object`, but is unable to because the initializer list does not contain
+  type `json_type::object`, but is unable to because the initializer list does not contain
   pairs with the first element (key) a string.
 - `std::bad_alloc`: if the underlying container can not be constructed, containing copies
   of the elements in the initializer list.
@@ -489,11 +490,11 @@ by `ArrayType` or `ObjectType`, and linear time in size of the initializer list.
 static basic_json array(std::initializer_list<basic_json> = std::initializer_list<basic_json>{});
 ```
 
-*Effect:* Factory method. Creates and returns a JSON value of type `value_t::array` containing
+*Effect:* Factory method. Creates and returns a JSON value of type `json_type::array` containing
 the elements specified by the initializer list, containing JSON values.
 
 *Remarks:* This member function is needed to disambiguate the creation of JSON values of
-type `value_t::array` and `value_t::object` for empty initializer lists and initializer lists
+type `json_type::array` and `json_type::object` for empty initializer lists and initializer lists
 containing pairs.
 
 *Complexity:* The same complexity to create the underlying data structure defined by `ArrayType`
@@ -503,13 +504,13 @@ and linear time in size of the initializer list.
 static basic_json object(std::initializer_list<basic_json> = std::initializer_list<basic_json>{});
 ```
 
-*Effect:* Factory method. Creates and returns a JSON value of type `value_t::object` containing
+*Effect:* Factory method. Creates and returns a JSON value of type `json_type::object` containing
 the elements specified by the initializer list, containing JSON values.
 
 The initializer list must contain pairs, the type of the first element must be a string.
 
 *Remarks:* This member function is needed to disambiguate the creation of JSON values of
-type `value_t::array` and `value_t::object` for empty initializer lists and initializer lists
+type `json_type::array` and `json_type::object` for empty initializer lists and initializer lists
 containing pairs.
 
 *Throws:*
@@ -575,15 +576,15 @@ bool operator==(const_reference) noexcept;
 
   Value type                 | Complexity
   -------------------------- | ----------
-  `value_t::null`            | constant
-  `value_t::object`          | depending on comparison of equality of `ObjectType`
-  `value_t::array`           | depending on comparison of equality of `ArrayType`
-  `value_t::string`          | depending on comparison of equality of `StringType`
-  `value_t::boolean`         | constant
-  `value_t::number_integer`  | constant
-  `value_t::number_unsigned` | constant
-  `value_t::number_float`    | constant
-  `value_t::discarded`       | constant
+  `json_type::null`            | constant
+  `json_type::object`          | depending on comparison of equality of `ObjectType`
+  `json_type::array`           | depending on comparison of equality of `ArrayType`
+  `json_type::string`          | depending on comparison of equality of `StringType`
+  `json_type::boolean`         | constant
+  `json_type::number_integer`  | constant
+  `json_type::number_unsigned` | constant
+  `json_type::number_float`    | constant
+  `json_type::discarded`       | constant
 
 
 ```cpp
@@ -628,20 +629,20 @@ value into a JSON value, followed by a comparison of inequality.
 #### Query Member Functions
 
 ```cpp
-constexpr value_t type() const noexcept;
+constexpr json_type type() const noexcept;
 ```
 
-*Effect:* Returns the type of the JSON value as a value of the `value_t` enumeration.
+*Effect:* Returns the type of the JSON value as a value of the `json_type` enumeration.
 
 *Throws:* Nothing.
 
 *Complexity:* Constant.
 
 ```cpp
-constexpr operator value_t () const noexcept;
+constexpr operator json_type () const noexcept;
 ```
 
-*Effect:* Implicit type cast of the type of the JSON value to a value of the `value_t` enumeration.
+*Effect:* Implicit type cast of the type of the JSON value to a value of the `json_type` enumeration.
 
 *Throws:* Nothing.
 
@@ -652,12 +653,12 @@ constexpr bool is_primitive() const noexcept;
 ```
 
 *Effect:* This function returns `true` if the JSON type is primitive, which is one of the following types:
-  - `value_t::string`
-  - `value_t::number_integral_signed`
-  - `value_t::number_integral_unsigned`
-  - `value_t::number_floating_point`
-  - `value_t::boolean`
-  - `value_t::null`
+  - `json_type::string`
+  - `json_type::number_integral_signed`
+  - `json_type::number_integral_unsigned`
+  - `json_type::number_floating_point`
+  - `json_type::boolean`
+  - `json_type::null`
 
 If not one of those types, it returns `false`.
 
@@ -670,8 +671,8 @@ constexpr bool is_structured() const noexcept;
 ```
 
 *Effect:* This function returns `true` if the JSON type is structured, which is one of the following types:
-  - `value_t::object`
-  - `value_t::array`
+  - `json_type::object`
+  - `json_type::array`
 
 If not one of those types, it returns `false`.
 
@@ -684,9 +685,9 @@ constexpr bool is_number() const noexcept;
 ```
 
 *Effect:* This function returns `true` if the JSON type is a number, which is one of the following types:
-  - `value_t::number_integral_signed`
-  - `value_t::number_integral_unsigned`
-  - `value_t::number_floating_point`
+  - `json_type::number_integral_signed`
+  - `json_type::number_integral_unsigned`
+  - `json_type::number_floating_point`
 
 If not one of those types, it returns `false`.
 
@@ -721,15 +722,15 @@ The return value depends on the different types and is defined as follows:
 
   Value type                           | return value
   ------------------------------------ | -------------
-  `value_t::null`                      | `true`
-  `value_t::boolean`                   | `false`
-  `value_t::string`                    | `false`
-  `value_t::number_integral_signed`    | `false`
-  `value_t::number_integral_unsigned`  | `false`
-  `value_t::number_floating_point`     | `false`
-  `value_t::object`                    | result of function `object_type::empty()`
-  `value_t::array`                     | result of function `array_type::empty()`
-  `value_t::discarded`                 | `false`
+  `json_type::null`                      | `true`
+  `json_type::boolean`                   | `false`
+  `json_type::string`                    | `false`
+  `json_type::number_integral_signed`    | `false`
+  `json_type::number_integral_unsigned`  | `false`
+  `json_type::number_floating_point`     | `false`
+  `json_type::object`                    | result of function `object_type::empty()`
+  `json_type::array`                     | result of function `array_type::empty()`
+  `json_type::discarded`                 | `false`
 
 *Remarks:* This function does not return whether a string stored as JSON value
 is empty - it returns whether the JSON container itself is empty which is
@@ -754,15 +755,15 @@ The return value depends on the different types and is defined as follows:
 
   Value type                           | return value
   ------------------------------------ | -------------
-  `value_t::null`                      | `0`
-  `value_t::boolean`                   | `1`
-  `value_t::string`                    | `1`
-  `value_t::number_integral_signed`    | `1`
-  `value_t::number_integral_unsigned`  | `1`
-  `value_t::number_floating_point`     | `1`
-  `value_t::object`                    | result of function `object_type::size()`
-  `value_t::array`                     | result of function `array_type::size()`
-  `value_t::discarded`                 | `0`
+  `json_type::null`                      | `0`
+  `json_type::boolean`                   | `1`
+  `json_type::string`                    | `1`
+  `json_type::number_integral_signed`    | `1`
+  `json_type::number_integral_unsigned`  | `1`
+  `json_type::number_floating_point`     | `1`
+  `json_type::object`                    | result of function `object_type::size()`
+  `json_type::array`                     | result of function `array_type::size()`
+  `json_type::discarded`                 | `0`
 
 *Remarks:* This function does not return the length of a string stored as JSON
 value - it returns the number of elements in the JSON value which is `1` in the case of a string.
@@ -788,15 +789,15 @@ The return value depends on the different types and is defined as follows:
 
   Value type                           | return value
   ------------------------------------ | -------------
-  `value_t::null`                      | `0` (same as `size()`)
-  `value_t::boolean`                   | `1` (same as `size()`)
-  `value_t::string`                    | `1` (same as `size()`)
-  `value_t::number_integral_signed`    | `1` (same as `size()`)
-  `value_t::number_integral_unsigned`  | `1` (same as `size()`)
-  `value_t::number_floating_point`     | `1` (same as `size()`)
-  `value_t::object`                    | result of function `object_type::max_size()`
-  `value_t::array`                     | result of function `array_type::max_size()`
-  `value_t::discarded`                 | `0` (same as `size()`)
+  `json_type::null`                      | `0` (same as `size()`)
+  `json_type::boolean`                   | `1` (same as `size()`)
+  `json_type::string`                    | `1` (same as `size()`)
+  `json_type::number_integral_signed`    | `1` (same as `size()`)
+  `json_type::number_integral_unsigned`  | `1` (same as `size()`)
+  `json_type::number_floating_point`     | `1` (same as `size()`)
+  `json_type::object`                    | result of function `object_type::max_size()`
+  `json_type::array`                     | result of function `array_type::max_size()`
+  `json_type::discarded`                 | `0` (same as `size()`)
 
 *Remarks:* This function helps `basic_json` satisfying the [Container](http://en.cppreference.com/w/cpp/concept/Container)
 requirements:
@@ -814,7 +815,7 @@ size_type count(typename object_type::key_type key) const;
 
 *Effect:* Returns the number of occurrences of a key in a JSON object.
 This method always returns `0` when executed on a JSON type that is not of
-type `value_t::object`.
+type `json_type::object`.
 
 *Remarks:* If `ObjectType` is the default `std::map` type, the return value will
 always be `0` (`key` was not found) or `1` (`key` was found).
@@ -833,7 +834,7 @@ const_iterator find(typename object_type::key_type key) const;
 If the element is not found or the JSON value is not an object, the result
 of `end()` is returned.
 This method always returns the result of `end()` when executed on a JSON type
-that is not of type `value_t::object`.
+that is not of type `json_type::object`.
 
 *Remarks:* There is a const and a non-const overload of this function.
 
@@ -852,18 +853,18 @@ const_reference operator[](size_type) const;
 ```
 
 *Effect:* Returns a reference to an element (a JSON value itself) of a JSON value of
-type `value_t::array` at the specified index. Overloads for const and non-const versions.
+type `json_type::array` at the specified index. Overloads for const and non-const versions.
 
 The non-const overload will, in case the specified index is greater or equal to `size()`,
 extend the array to a size capable of holding the specified index. All other values
 in the new array between the previous size and the new size will be filled with JSON values
-of type `value_t::null`. The reference to the newly created JSON value which is returned is
+of type `json_type::null`. The reference to the newly created JSON value which is returned is
 a default constructed JSON value.
 
-The non-const overload also will convert the JSON value into a type `value_t::array`, if
-it was of type `value_t::null`.
+The non-const overload also will convert the JSON value into a type `json_type::array`, if
+it was of type `json_type::null`.
 
-*Precondition:* The JSON value must be of type `value_t::array` or `value_t::null`.
+*Precondition:* The JSON value must be of type `json_type::array` or `json_type::null`.
 
 *Postcondition:* The non-const overload invalidates all iterators, pointers and references.
 
@@ -872,8 +873,8 @@ it was of type `value_t::null`.
 - const overload: No index checks are being performed. Access to indices other than `0..size()-1`
   are undefined behaviour.
 
-*Throws:* `std::domain_error` if the type of the JSON value is diffrent than `value_t::array`
-or `value_t::null`.
+*Throws:* `std::domain_error` if the type of the JSON value is diffrent than `json_type::array`
+or `json_type::null`.
 
 *Complexity:*
 - const overload: The complexity of a random element access of the underlying data structure
@@ -889,15 +890,15 @@ const_reference operator[](const typename object_type::key_type &) const;
 ```
 
 *Effects:* Returns a reference to an element (a JSON value itself) of a JSON value of
-type `value_t::object` for the specified key. Overloads for const and non-const versions.
+type `json_type::object` for the specified key. Overloads for const and non-const versions.
 
 The non-const overload will, in case the specified key is not present in the JSON value,
 default construct a JSON value for the key and return the reference to it.
 
-The non-const overload also will convert the JSON value into a type `value_t::object`, if
-it was of type `value_t::null`.
+The non-const overload also will convert the JSON value into a type `json_type::object`, if
+it was of type `json_type::null`.
 
-*Precondition:* The JSON value must be of type `value_t::object` or `value_t::null`.
+*Precondition:* The JSON value must be of type `json_type::object` or `json_type::null`.
 
 *Postcondition:* The non-const overload invalidates all iterators, pointers and references.
 
@@ -907,9 +908,9 @@ it was of type `value_t::null`.
   behaviour.
 
 *Throws:*
-- const overlaod: `std::domain_error` if the type of the JSON value is diffrent than `value_t::object`.
+- const overlaod: `std::domain_error` if the type of the JSON value is diffrent than `json_type::object`.
 - non-const overload:  `std::domain_error` if the type of the JSON value is diffrent than
-  `value_t::object` or `value_t::null`.
+  `json_type::object` or `json_type::null`.
 
 *Complexity:*
 - const overload: The complexity of an element access of the underlying data structure
@@ -939,18 +940,18 @@ Overloads for const and non-const versions.
 The non-const overload will insert the requested JSON value, in particular:
 - If the JSON pointer points to an object key which does not exist, the JSON value
   is default constructed.
-  If the JSON value on which the member function is called upon is of type `value_t::null`,
-  it will be converted to `value_t::object`.
+  If the JSON value on which the member function is called upon is of type `json_type::null`,
+  it will be converted to `json_type::object`.
 - If the JSON pointer points to array index which does not exist, the array will
   be expanded to a be able to hold the specified index. All newly created JSON values
-  in the array are constructed and of type `value_t::null`. The JSON value at the
+  in the array are constructed and of type `json_type::null`. The JSON value at the
   specified index is default constructed.
-  If the JSON value on which the member function is called upon is of type `value_t::null`,
-  it will be converted to `value_t::array`.
+  If the JSON value on which the member function is called upon is of type `json_type::null`,
+  it will be converted to `json_type::array`.
 - The JSON pointer special value `-` is treated as array index past the last existing,
   i.e. appending to the existing array.
-  If the JSON value on which the member function is called upon is of type `value_t::null`,
-  it will be converted to `value_t::array`.
+  If the JSON value on which the member function is called upon is of type `json_type::null`,
+  it will be converted to `json_type::array`.
 
 *Postcondition:* The non-const overload invalidates all iterators, pointers and references.
 
@@ -983,14 +984,14 @@ const_reference at(size_type) const;
 Overloads for const and non-const versions.
 
 *Precondition:* The JSON value which this member function is called upon must be of
-type `value_t::array`.
+type `json_type::array`.
 
 *Remarks:*
 - Performs bound checks.
 - No synchronization.
 
 *Throws:*
-- `std::domain_error` if the JSON value is not of type `value_t::array`.
+- `std::domain_error` if the JSON value is not of type `json_type::array`.
 - `std::out_of_range` if the specified index is not within the range `0..size()-1`.
 
 *Complexity:* The same as for a random access of the underlying data structure defined
@@ -1005,14 +1006,14 @@ const_reference at(const typename object_type::key_type &) const;
 Overloads for const and non-const versions.
 
 *Precondition:* The JSON value which this member function is called upon must be of
-type `value_t::object`.
+type `json_type::object`.
 
 *Remarks:*
 - Performs bound checks.
 - No synchronization.
 
 *Throws:*
-- `std::domain_error` if the JSON value is not of type `value_t::object`.
+- `std::domain_error` if the JSON value is not of type `json_type::object`.
 - `std::out_of_range` if the specified key does not exist, equivalent to `find(key)==end()`.
 
 *Complexity:* The same as for finding an element with a specified key of the underlying data
@@ -1053,7 +1054,7 @@ string_type value(const json_pointer &, const char * default_value) const;
 ```
 
 *Effect:* Returns a copy of the data of an JSON value specified by a key or a default value,
-if the key does not exist within the called JSON value of type `value_t::object`.
+if the key does not exist within the called JSON value of type `json_type::object`.
 
 The JSON value to be found must be convertible into `ValueType`.
 
@@ -1065,7 +1066,7 @@ JSON pointer can not be resolved, the default value is returned.
 *Remarks:* No synchronization.
 
 *Throws:* `std::domain_error` if the JSON value which the member function is called upon is not
-  of type `value_t::object`.
+  of type `json_type::object`.
 
 *Complexity:* The same complexity af for the underlying data structure defined by `ObjectType`
 to find an element. Constant overhead by `basic_json`.
@@ -1128,21 +1129,21 @@ const_reference front() const noexcept;
 
 *Effect:* Returns a reference to the first element of the JSON value, overloads for
 const and non-const references. Depending on the type of the JSON value:
-- `value_t::object` and `value_t::array`: the function returns a reference to the first
+- `json_type::object` and `json_type::array`: the function returns a reference to the first
    element in the underlying container.
-- primitive type (except `value_t::null`): the function returns a reference to the value.
+- primitive type (except `json_type::null`): the function returns a reference to the value.
 
 *Throws:* `std::domain_error` if the function was called on a JSON value with a type
-of `value_t::null`.
+of `json_type::null`.
 
-*Remarks:* Calling this function on a structured JSON value (types `value_t::object` and
-`value_t::array`) with empty underlying containers, the behaviour is *undefined*.
+*Remarks:* Calling this function on a structured JSON value (types `json_type::object` and
+`json_type::array`) with empty underlying containers, the behaviour is *undefined*.
 
 *Complexity:*
-- For primitive JSON value types (except type `value_t::null`): Constant.
-- For JSON value of type `value_t::object`, the complexity to access the first element of
+- For primitive JSON value types (except type `json_type::null`): Constant.
+- For JSON value of type `json_type::object`, the complexity to access the first element of
   the underlying container defined by `ObjectType`.
-- For JSON value of type `value_t::array`, the complexity to access the first element of
+- For JSON value of type `json_type::array`, the complexity to access the first element of
   the underlying container defined by `ArrayType`.
 
 ```cpp
@@ -1152,21 +1153,21 @@ const_reference back() const noexcept;
 
 *Effect:* Returns a reference to the last element of the JSON value, overloads for
 const and non-const references. Depending on the type of the JSON value:
-- `value_t::object` and `value_t::array`: the function returns a reference to the last
+- `json_type::object` and `json_type::array`: the function returns a reference to the last
   element in the underlying container.
-- primitive type (except `value_t::null`): the function returns a referene to the value.
+- primitive type (except `json_type::null`): the function returns a referene to the value.
 
 *Throws:* `std::domain_error` if the function was called on a JSON vaule with a type
-of `value_t::null`.
+of `json_type::null`.
 
-*Remarks:* Calling this function on a structured JSON value (types `value_t::object` and
-`value_t::array`) with empty underlying containers, the behaviour is *undefined*.
+*Remarks:* Calling this function on a structured JSON value (types `json_type::object` and
+`json_type::array`) with empty underlying containers, the behaviour is *undefined*.
 
 *Complexity:*
-- For primitive JSON value types (except type `value_t::null`): Constant.
-- For JSON value of type `value_t::object`, the complexity to access the last element of
+- For primitive JSON value types (except type `json_type::null`): Constant.
+- For JSON value of type `json_type::object`, the complexity to access the last element of
   the underlying container defined by `ObjectType`.
-- For JSON value of type `value_t::array`, the complexity to access the last element of
+- For JSON value of type `json_type::array`, the complexity to access the last element of
   the underlying container defined by `ArrayType`.
 
 
@@ -1182,8 +1183,8 @@ void clear() noexcept; // clears container
 *Effect:* Clears the JSON value.
 
 *Postcondition:* The contained value is destructed if necessary. All sub-values (in case
-of types `value_t::object` and `value_t::array`) are destructed. The JSON value is of
-type `value_t::null`. The JSON value is in the same state as if constructed
+of types `json_type::object` and `json_type::array`) are destructed. The JSON value is of
+type `json_type::null`. The JSON value is in the same state as if constructed
 with `basic_json(std::nullptr)` or the default constructor.
 
 *Remarks:* No synchronization.
@@ -1216,7 +1217,7 @@ All iterators and references remain valid. The past-the-end iterator is invalida
 
 *Remarks:* No synchronization.
 
-*Throws:* `std::domain_error` if JSON value is not of type `value_t::array`.
+*Throws:* `std::domain_error` if JSON value is not of type `json_type::array`.
 Example: `"cannot use swap() with string"`.
 
 *Comlexity:* Constant.
@@ -1231,7 +1232,7 @@ All iterators and references remain valid. The past-the-end iterator is invalida
 
 *Remarks:* No synchronization.
 
-*Throws:* `std::domain_error` if JSON value is not of type `value_t::object`.
+*Throws:* `std::domain_error` if JSON value is not of type `json_type::object`.
 Example: `"cannot use swap() with string"`.
 
 *Comlexity:* Constant.
@@ -1246,7 +1247,7 @@ All iterators and references remain valid. The past-the-end iterator is invalida
 
 *Remarks:* No synchronization.
 
-*Throws:* `std::domain_error` when JSON value is not of type `value_t::string`
+*Throws:* `std::domain_error` when JSON value is not of type `json_type::string`
 Example: `"cannot use swap() with boolean"`.
 
 *Comlexity:* Constant.
@@ -1258,10 +1259,10 @@ void push_back(const typename object_type::value_type &);
 ```
 
 *Requires:* The JSON value which the data is appended to must be of type
-`value_t::array` or `value_t::null`.
+`json_type::array` or `json_type::null`.
 
-*Effect:* Appends data to the JSON value. If the type was `value_t::null`, an
-empty JSON value of type `value_t::array` is created and the specified data appended.
+*Effect:* Appends data to the JSON value. If the type was `json_type::null`, an
+empty JSON value of type `json_type::array` is created and the specified data appended.
 The appended data is stored in form of a JSON value and is owned by the JSON value
 it was appended to.
 
@@ -1282,10 +1283,10 @@ void push_back(std::initializer_list<basic_json>);
 ```
 
 *Effect:* This function allows to use `push_back` with an initializer list. In case
-  1. the current JSON value is of type `value_t::object`, and
+  1. the current JSON value is of type `json_type::object`, and
   2. the initializer list contains only two elements, and
   3. the first element of the initializer list is a string,
-the initializer list is converted into an object element (JSON value of type `value_t::object`)
+the initializer list is converted into an object element (JSON value of type `json_type::object`)
 and added using `void push_back(const typename object_type::value_type&)`. Otherwise,
 the initializer list is converted to a JSON value and added using `void push_back(basic_json&&)`.
 
@@ -1324,14 +1325,14 @@ template<class... Args> reference emplace_back(Args && ...);
 ```
 
 *Effect:* Appends a new JSON value from the passed parameters to the JSON value.
-If the function is called on a JSON value of type `value_t::null`, an empty
-JSON value of type `value_t::array` is created before appending the newly created
+If the function is called on a JSON value of type `json_type::null`, an empty
+JSON value of type `json_type::array` is created before appending the newly created
 value from the arguments. A reference to the newly created object is returned.
 
 *Requires:* A `basic_json` object must be construtible from the template argument types.
 
 *Throws:* `std::domain_error` when called on a JSON value of type other than
-`value_t::array` or `value_t::null`.
+`json_type::array` or `json_type::null`.
 
 *Remarks:* No synchronization.
 
@@ -1342,10 +1343,10 @@ the underlying data structure, which is defined by the template parameter `Array
 template<class... Args> std::pair<iterator, bool> emplace(Args && ...);
 ```
 
-*Effect:* Inserts a new JSON value into a JSON value of type `value_t::object`,
+*Effect:* Inserts a new JSON value into a JSON value of type `json_type::object`,
 constructed in-place with the given arguments, if there is no element with the key in the
-container. If the function is called on a JSON value of type `value_t::null`, an empty
-JSON value of type `value_t::object` is created before appending the newly created value.
+container. If the function is called on a JSON value of type `json_type::null`, an empty
+JSON value of type `json_type::object` is created before appending the newly created value.
 
 If a JSON value with the same key already exists, its content will be replaced with
 the newly created JSON value from the specified parameters. If an insertion of the newly
@@ -1360,7 +1361,7 @@ The function returns a pair, containing:
 *Requires:* A `basic_json` object must be construtible from the template argument types.
 
 *Throws:* `std::domain_error` when called on a JSON value of type other than
-`value_t::object` or `value_t::null`.
+`json_type::object` or `json_type::null`.
 
 *Remarks:* No synchronization.
 
@@ -1377,7 +1378,7 @@ The function returns an iterator pointing to the newly inserted JSON value.
 
 *Throws:*
 - `std::domain_error` if the JSON value which the member function is called upon,
-  is not of type `value_t::array`.
+  is not of type `json_type::array`.
 - `std::invalid_argument` if the specified iterator is not an iterator of `*this`.
 
 *Postcondition:* If the insertion was not possible, the JSON value which the member
@@ -1397,7 +1398,7 @@ elements and returns the position specified by the iterator.
 
 *Throws:*
 - `std::domain_error` if the JSON value which the member function is called upon,
-  is not of type `value_t::array`.
+  is not of type `json_type::array`.
 - `std::invalid_argument` if the specified iterator is not an iterator of `*this`.
 
 *Postcondition:* If the insertion was not possible, the JSON value which the member
@@ -1422,7 +1423,7 @@ elements and returns the position specified by the iterator.
 
 *Throws:*
 - `std::domain_error` if the JSON value which the member function is called upon,
-  is not of type `value_t::array`.
+  is not of type `json_type::array`.
 - `std::invalid_argument` if the specified iterator is not an iterator of `*this`.
 - `std::invalid_argument` if the specified iterators `first` and `last` do not belong
   to the same JSON value.
@@ -1430,7 +1431,7 @@ elements and returns the position specified by the iterator.
   of the container for which `insert` is being called.
 
 *Precondition:* The JSON value which the elements are inserted into must be of
-type `value_t::array`.
+type `json_type::array`.
 
 *Postcondition:* If the insertion was not possible, the JSON value which the member
 function was called upon, remains in the same state as before the function call.
@@ -1452,7 +1453,7 @@ no elements and returns the specified iterator.
 *Remarks:* No synchronization.
 
 *Precondition:* The JSON value which the elements are inserted into must be of
-type `value_t::array`.
+type `json_type::array`.
 
 *Postcondition:* If the insertion was not possible, the JSON value which the member
 function was called upon, remains in the same state as before the function call.
@@ -1460,7 +1461,7 @@ Either all new JSON values can be inserted or none.
 
 *Throws:*
 - `std::domain_error` if the JSON value which the member function is called upon,
-  is not of type `value_t::array`.
+  is not of type `json_type::array`.
 - `std::invalid_argument` if the specified iterator is not an iterator of `*this`.
 
 *Complexity:* Linear in size of the initializer list, plus the complexity of the
@@ -1470,14 +1471,14 @@ insert operation of the underlying data structure, defined by the type `ArrayTyp
 size_type erase(const typename object_type::key_type &);
 ```
 
-*Effect:* Removes elements from a JSON value of type `value_t::object`.
+*Effect:* Removes elements from a JSON value of type `json_type::object`.
 The function returns the number of removed elements, which is zero or a positive
 number.
 
 *Postcondition:* References and iterators to the erased elements are invalidated.
 Other references and iterators are not affected.
 
-*Throws:* `std::domain_error` if the type of the JSON value was other than `value_t::object`.
+*Throws:* `std::domain_error` if the type of the JSON value was other than `json_type::object`.
 
 *Remarks:* No synchronization.
 
@@ -1489,13 +1490,13 @@ void erase(const size_type);
 ```
 
 *Effect:* Removes an element at the specified index (in the range `[0, size()-1]`)
-from a JSON value of type `value_t::array`.
+from a JSON value of type `json_type::array`.
 
 *Postcondition:* References and iterators are invalidated.
 
 *Throws:*
 - `std::domain_error` if the JSON value which the member function is called upon,
-  is not of type `value_t::array`.
+  is not of type `json_type::array`.
 - `std::out_of_range` if the specified index is not in the range `[0, size()-1]`.
 
 *Remarks:* No synchronization.
@@ -1510,10 +1511,10 @@ template<class IteratorType, /*SFINAE omitted*/ > IteratorType erase(IteratorTyp
 *Effects:* Erases the element from the JSON value at the position specified by the iterator.
 The member function returns an iterator pointing to the element after the erased element.
 Depending on the type of the JSON value:
-- `value_t::object` / `value_t::array`: the element at the specified position will
+- `json_type::object` / `json_type::array`: the element at the specified position will
   be erased.
-- Primitive types (except `value_t::null`): the resulting JSON value will be of
-  type `value_t::null`, its content will be erased.
+- Primitive types (except `json_type::null`): the resulting JSON value will be of
+  type `json_type::null`, its content will be erased.
 
 *Precondition:* The iterator type `IteratorType` must be of `iterator` or `const_iterator`.
 
@@ -1521,7 +1522,7 @@ Depending on the type of the JSON value:
 
 *Throws:*
 - `std::domain_error` if the JSON value which the member function is called upon,
-  is of type `value_t::null`.
+  is of type `json_type::null`.
 - `std::invalid_argument` if the specified iterator does not belong to the current
   JSON value.
 - `std::out_of_range` if the specified position is not in the range `[begin(), end())`.
@@ -1529,11 +1530,11 @@ Depending on the type of the JSON value:
 *Remarks:* No synchronization.
 
 *Complexity:* Depends on the type of the JSON value:
-- `value_t::object`: The complexity of erasure of an element of the underlying
+- `json_type::object`: The complexity of erasure of an element of the underlying
   data structure, defined by `ObjectType`. Constant overhead by `basic_json`.
-- `value_t::array`: The complexity of erasure of an element of the underlying
+- `json_type::array`: The complexity of erasure of an element of the underlying
   data structure, defined by `ArrayType`. Constant overhead by `basic_json`.
-- `value_t::string`: Complexity of the destruction of the `StringType`. Constant
+- `json_type::string`: Complexity of the destruction of the `StringType`. Constant
   overhead by `basic_json`.
 - others: Constant.
 
@@ -1544,10 +1545,10 @@ template<class IteratorType, /*SFINAE omitted*/ > IteratorType erase(IteratorTyp
 *Effect:* Erases all elments from the JSON value specified by the range `[first, last)`.
 The function returns an iterator pointing to the element after the last erased. Erasing an
 empty range is a no-op. Depending on the type of the JSON value:
-- `value_t::object` / `value_t::array`: The elements in the specified range are
+- `json_type::object` / `json_type::array`: The elements in the specified range are
   erased from the JSON value.
-- Primitive types (except `value_t::null`): the resulting JSON value will be of
-  type `value_t::null`, its content will be erased.
+- Primitive types (except `json_type::null`): the resulting JSON value will be of
+  type `json_type::null`, its content will be erased.
 
 *Precondition:* The iterator type `IteratorType` must be of `iterator` or `const_iterator`.
 
@@ -1555,7 +1556,7 @@ empty range is a no-op. Depending on the type of the JSON value:
 
 *Throws:*
 - `std::domain_error` if the JSON value which the member function is called upon,
-  is of type `value_t::null`.
+  is of type `json_type::null`.
 - `std::invalid_argument` if of of the specified iterators does not belong to the current
   JSON value.
 - `std::out_of_range` if the specified position is not in the range `[begin(), end())`.
@@ -1563,11 +1564,11 @@ empty range is a no-op. Depending on the type of the JSON value:
 *Remarks:* No synchronization.
 
 *Complexity:* Depends on the type of the JSON value:
-- `value_t::object`: The complexity of erasure of the range of elements of the underlying
+- `json_type::object`: The complexity of erasure of the range of elements of the underlying
   data structure, defined by `ObjectType`. Constant overhead by `basic_json`.
-- `value_t::array`: The complexity of erasure of the range of elements of the underlying
+- `json_type::array`: The complexity of erasure of the range of elements of the underlying
   data structure, defined by `ArrayType`. Constant overhead by `basic_json`.
-- `value_t::string`: Complexity of the destruction of the `StringType`. Constant
+- `json_type::string`: Complexity of the destruction of the `StringType`. Constant
   overhead by `basic_json`.
 - others: Constant.
 
@@ -1691,21 +1692,21 @@ overload, the specified value must implicitly convertible, according to the foll
 
 Overload | Implicitly convertible into             | Resulting JSON value type
 -------- | --------------------------------------- | -----------------------------------
-(1)      | `BasicJsonType::boolean_type`           | `value_t::boolean`
-         | `BasicJsonType::integral_signed_type`   | `value_t::number_integral_signed`
-         | `BasicJsonType::integral_unsigned_type` | `value_t::number_integral_unsigned`
-         | `BasicJsonType::floating_point_type`    | `value_t::number_floating_point`
-         |                                         | `value_t::null`
-(2)      | `BasicJsonType::integral_signed_type`   | `value_t::number_integral_signed`
-(3)      | `BasicJsonType::string_type`            | `value_t::string`
-(4)      | `BasicJsonType::array_type`             | `value_t::array`
-(5)      | `BasicJsonType::object_type`            | `value_t::object`
+(1)      | `BasicJsonType::boolean_type`           | `json_type::boolean`
+         | `BasicJsonType::integral_signed_type`   | `json_type::number_integral_signed`
+         | `BasicJsonType::integral_unsigned_type` | `json_type::number_integral_unsigned`
+         | `BasicJsonType::floating_point_type`    | `json_type::number_floating_point`
+         |                                         | `json_type::null`
+(2)      | `BasicJsonType::integral_signed_type`   | `json_type::number_integral_signed`
+(3)      | `BasicJsonType::string_type`            | `json_type::string`
+(4)      | `BasicJsonType::array_type`             | `json_type::array`
+(5)      | `BasicJsonType::object_type`            | `json_type::object`
 
 *Postcondition:*
 - The output parameter of type `BasicJsonType` is a valid JSON value of appropriate
-  type `value_t` (see table *Precondition*).
+  type `json_type` (see table *Precondition*).
 - If the value is a floating point number and either `inf` or `NAN`, the resulting
-  JSON value is of type `value_t::null`.
+  JSON value is of type `json_type::null`.
 
 *Remarks:* This function is a customization point. Custom implementations of `to_json` may
 be provided by the user to map custom data to JSON values.
@@ -1763,7 +1764,7 @@ void from_json(const BasicJsonType &, std::forward_list<T, Allocator> &);       
 *Effect:* Converts a JSON value of type `BasicJsonType` into a specified data type.
 
 *Precondition:*
-- all: The specified JSON value must not be of type `value_t::null`.
+- all: The specified JSON value must not be of type `json_type::null`.
 - (11): The specified forward list must contain the same data type as the JSON value.
 
 *Postcondition:* The specified data type holds a copy of the contents of the given
@@ -1773,9 +1774,9 @@ JSON value.
 be provided by the user to map custom data to JSON values.
 
 *Throws:*
-- `std::domain_error` if the JSON value is not of the appropriate type `value_t`, according
+- `std::domain_error` if the JSON value is not of the appropriate type `json_type`, according
   to the specified value type.
-- (11): `std::domain_error` if the JSON value is of type `value_t::null` or the data
+- (11): `std::domain_error` if the JSON value is of type `json_type::null` or the data
   type contained within the JSON value does not match the `value_type` of the specified
   forward list.
 
