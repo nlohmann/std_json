@@ -1667,13 +1667,126 @@ private:
 <a name="func-to_json"></a>
 ### Free Functions `to_json`
 
-**TODO**
+```cpp
+template <typename BasicJsonType, typename T, /*SFINAE omitted*/>
+void to_json(BasicJsonType &, T) noexcept;                                               // (1)
+
+template <typename BasicJsonType, typename UnscopedEnumType, /*SFINAE omitted*/>
+void to_json(BasicJsonType &, UnscopedEnumType) noexcept;                                // (2)
+
+template <typename BasicJsonType, typename CompatibleStringType, /*SFINAE omitted*/>
+void to_json(BasicJsonType &, const CompatibleStringType &);                             // (3)
+
+template <typename BasicJsonType, typename CompatibleArrayType, /*SFINAE omitted*/>
+void to_json(BasicJsonType &, const CompatibleArrayType &);                              // (4)
+
+template <typename BasicJsonType, typename CompatibleObjectType, /*SFINAE omitted*/>
+void to_json(BasicJsonType &, const CompatibleObjectType &);                             // (5)
+```
+
+*Effect:* Converts the specified argument to a JSON value of type `BasicJsonType`.
+
+*Precondition:* Specified value types must be convertible to a JSON value. Depending on the
+overload, the specified value must implicitly convertible, according to the following table:
+
+Overload | Implicitly convertible into             | Resulting JSON value type
+-------- | --------------------------------------- | -----------------------------------
+(1)      | `BasicJsonType::boolean_type`           | `value_t::boolean`
+         | `BasicJsonType::integral_signed_type`   | `value_t::number_integral_signed`
+         | `BasicJsonType::integral_unsigned_type` | `value_t::number_integral_unsigned`
+         | `BasicJsonType::floating_point_type`    | `value_t::number_floating_point`
+         |                                         | `value_t::null`
+(2)      | `BasicJsonType::integral_signed_type`   | `value_t::number_integral_signed`
+(3)      | `BasicJsonType::string_type`            | `value_t::string`
+(4)      | `BasicJsonType::array_type`             | `value_t::array`
+(5)      | `BasicJsonType::object_type`            | `value_t::object`
+
+*Postcondition:*
+- The output parameter of type `BasicJsonType` is a valid JSON value of appropriate
+  type `value_t` (see table *Precondition*).
+- If the value is a floating point number and either `inf` or `NAN`, the resulting
+  JSON value is of type `value_t::null`.
+
+*Remarks:* This function is a customization point. Custom implementations of `to_json` may
+be provided by the user to map custom data to JSON values.
+
+*Throws:*
+- Overloads (1) and (2): Nothing.
+- Overloads (3), (4), (5): `std::bad_alloc` if the memory allocation to hold the copy of the specified
+  data fails.
+
+*Complexity:*
+- Overloads (1) and (2): Constant.
+- Overload (3): The same complexity to copy the the string, defined by the type `StringType`.
+- Overloads (4), (5): The same complexity as the underlying data structures, defined by
+  either `ArrayType` or `ObjectType` to create the container and linear in number of elements to copy.
 
 
 <a name="func-from_json"></a>
 ### Free Functions `from_json`
 
-**TODO**
+```cpp
+template <typename BasicJsonType>
+void from_json(const BasicJsonType &, typename BasicJsonType::boolean_type &);           // (1)
+
+template <typename BasicJsonType>
+void from_json(const BasicJsonType &, typename BasicJsonType::integral_signed_type &);   // (2)
+
+template <typename BasicJsonType>
+void from_json(const BasicJsonType &, typename BasicJsonType::integral_unsigned_type &); // (3)
+
+template <typename BasicJsonType>
+void from_json(const BasicJsonType &, typename BasicJsonType::floating_point_type &);    // (4)
+
+template <typename BasicJsonType, typename UnscopedEnumType, /*SFNINAE omitted*/>
+void from_json(const BasicJsonType &, UnscopedEnumType &);                               // (5)
+
+template <typename BasicJsonType>
+void from_json(const BasicJsonType &, typename BasicJsonType::string_type &);            // (6)
+
+template <typename BasicJsonType>
+void from_json(const BasicJsonType &, typename BasicJsonType::array_type &);             // (7)
+
+template <typename BasicJsonType, typename CompatibleArrayType, /*SFINAE omitted*/>
+void from_json(const BasicJsonType &, CompatibleArrayType &);                            // (8)
+
+template <typename BasicJsonType, typename CompatibleObjectType, /*SFINAE omitted*/>
+void from_json(const BasicJsonType &, CompatibleObjectType &);                           // (9)
+
+template <typename BasicJsonType, typename ArithmeticType, /*SFINAE omitted*/>
+void from_json(const BasicJsonType &, ArithmeticType &);                                 // (10)
+
+template <typename BasicJsonType, typename T, typename Allocator>
+void from_json(const BasicJsonType &, std::forward_list<T, Allocator> &);                // (11)
+```
+
+*Effect:* Converts a JSON value of type `BasicJsonType` into a specified data type.
+
+*Precondition:*
+- all: The specified JSON value must not be of type `value_t::null`.
+- (11): The specified forward list must contain the same data type as the JSON value.
+
+*Postcondition:* The specified data type holds a copy of the contents of the given
+JSON value.
+
+*Remarks:* This function is a customization point. Custom implementations of `from_json` may
+be provided by the user to map custom data to JSON values.
+
+*Throws:*
+- `std::domain_error` if the JSON value is not of the appropriate type `value_t`, according
+  to the specified value type.
+- (11): `std::domain_error` if the JSON value is of type `value_t::null` or the data
+  type contained within the JSON value does not match the `value_type` of the specified
+  forward list.
+
+*Complexity:*
+- Overloads (1), (2), (3), (4), (5), (10): Constant.
+- Overload (6): The same complexity as to copy a string defined by the type `StringType`.
+- Overload (7), (8): The same complexity as to copy data into the specified container,
+  defined by `ArrayType`.
+- Overload (9): The same complexity as to copy data into the specified container,
+  defined by `ObjectType`.
+- Overload (11): The same complexity as to copy data into the specified list.
 
 
 <a name="func-factory"></a>
