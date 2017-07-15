@@ -1877,7 +1877,27 @@ be provided by the user to map custom data to JSON values.
 <a name="func-user-defined-literals"></a>
 ### User Defined Literals
 
-**TODO**
+```cpp
+json operator "" _json(const char *, std::size_t);
+```
+
+*Effect:* Constructs a JSON value (with all neccesary subnodes) from the specified string.
+
+*Remarks:*
+- Only complete and syntactically correct JSON data representation will result in success,
+  partial construction is not supported.
+- The result of this user defined literal applies only to the default configuration
+  of the class template `basic_json`.
+
+```cpp
+json::json_pointer operator "" _json_pointer(const char *, std::size_t);
+```
+
+*Effect:* Constructs a JSON pointer from the specified string.
+
+*Remarks:*
+- The result of this user defined literal applies only to the default configuration
+  of the class template `basic_json`.
 
 
 <a name="func-swap"></a>
