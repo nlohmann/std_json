@@ -34,6 +34,9 @@ It proposes a library extension.
     - [Container Operations](#class-basic_json-container-operations)
     - [Serialization / Deserialization](#class-basic_json-serialization)
   - [Nested Class `basic_json::json_pointer`](#class-json_pointer)
+    - [Construction](#class-json_pointer-construction)
+    - [Non-Modifying Operators](#class-json_pointer-non-modifying-op)
+    - [Serialization](#class-json_pointer-serialization)
   - [Free Functions `to_json`](#func-to_json)
   - [Free Functions `from_json`](#func-from_json)
   - [User Defined Literals](#func-user-defined-literals)
@@ -59,7 +62,7 @@ The goal should be a library extension that fits well into the standard library,
 <a name="example"></a>
 ### Example: representation of data in JSON and handling in C++
 
-JSON data:
+For the following examples, let's consider this JSON data:
 
 ```js
 {
@@ -78,7 +81,9 @@ JSON data:
 }
 ```
 
-Access in C++:
+##### Handling in C++
+
+Elements can be accessed comfortably using index operators:
 
 ```cpp
 json data;
@@ -109,7 +114,7 @@ data["object"] = {{ "currency", "USD" }, { "value", 42.99 }};
 or a more direct representation in C++:
 
 ```cpp
-json j = {
+json data = {
     { "pi", 3.141 },
     { "flag", true },
     { "name", "Niels Lohmann" },
@@ -125,19 +130,46 @@ json j = {
 };
 ```
 
+##### Access using JSON pointers
+
+For the given example `data` the following table shows the result for various
+JSON pointers (see [RFC6901):
+
+    JSON Pointer           | Result
+    ---------------------- | -------
+    `"/pi"`                | 3.414
+    `"/anser/everything"`  | 42
+    `"/list/2"`            | 1
+
+written in code:
+
+```cpp
+const json::json_pointer p = "/anser/everything";
+data[p] = 42;
+```
+
+For convenience, there is also an user defined literal:
+
+```cpp
+data["/anser/everything"_json_pointer] = 42;
+```
+
 
 <a name="scope"></a>
 ## Scope
 
-This extension is a pure library extension. It does not require changes to the standard components. The extension can be implemented in C++11, C++14, and C++17.
+This extension is a pure library extension. It does not require changes to the standard components.
+The extension can be implemented in C++11, C++14, and C++17.
 
 
 <a name="terminology"></a>
 ## Terminology
 
-The terminology used in this paper is intended to be consistent with terms used in the JSON world [RFC7159].
+The terminology used in this paper is intended to be consistent with terms used in 
+the JSON world [RFC7159].
 
-The term *value* [RFC7159 / chapter 3] refers to an entity that represents information and can be one of the following:
+The term *value* [RFC7159 / chapter 3] refers to an entity that represents information and can be
+one of the following:
 
 - object
 - array
@@ -555,7 +587,7 @@ basic_json & operator=(basic_json &&) noexcept( /*omitted*/ );
 #### Non-Modifying Operators
 
 ```cpp
-bool operator==(const_reference) noexcept;
+bool operator==(const_reference) const noexcept;
 ```
 
 *Effect:* Compares two JSON values for equality according to the following rules:
@@ -601,7 +633,7 @@ value into a JSON value, followed by a comparison of equality.
 *Remarks:* Same properties as `bool operator==(const_reference) noexcept;`
 
 ```cpp
-bool operator!=(const_reference) noexcept;
+bool operator!=(const_reference) const noexcept;
 ```
 
 *Effect:* Compares two JSON values for inequality by calculating the equivalent
@@ -1591,78 +1623,109 @@ friend std::isteram & operator>>(std::istream & basic_json &);
 <a name="class-json_pointer"></a>
 ### Nested Class `basic_json::json_pointer`
 
+A JSON pointer defines a string syntax for identifying a specific value
+within a JSON document.
+
 ```cpp
 class json_pointer
 {
-    // allow basic_json to access private members
     friend class basic_json;
 
 public:
-    explicit json_pointer(const std::string & s = "");
+    // construction
 
-    // return a string representation of the JSON pointer
-    std::string to_string() const noexcept;
+    json_pointer();
+    explicit json_pointer(const std::string &);
+
+    json_pointer(const json_pointer &) = default;
+    json_pointer & operator=(const json_pointer &) = default;
+
+    json_pointer(json_pointer &&) = default;
+    json_pointer & operator=(json_pointer &&) = default;
+
+    // non-modifying operators
+
+    bool operator==(const json_pointer &) const noexcept;
+    bool operator!=(const json_pointer &) const noexcept;
+
+    // serialization
+
+    std::string str() const;
     operator std::string() const;
-
-private:
-    // remove and return last reference pointer
-    std::string pop_back();
-
-    // return whether pointer points to the root document
-    bool is_root() const;
-
-    json_pointer top() const;
-
-    // create and return a reference to the pointed to value
-    // complexity: Linear in the number of reference tokens.
-    reference get_and_create(reference j) const;
-
-    // return a reference to the pointed to value
-    // complexity: Linear in the length of the JSON pointer.
-    reference get_unchecked(pointer ptr) const;
-    reference get_checked(pointer ptr) const;
-
-    // return a const reference to the pointed to value
-    const_reference get_unchecked(const_pointer ptr) const;
-    const_reference get_checked(const_pointer ptr) const;
-
-    // split the string input to reference tokens
-    static std::vector<std::string> split(const std::string & reference_string);
-
-private:
-    // replace all occurrences of a substring by another string
-    static void replace_substring(
-        std::string & s,
-        const std::string & f,
-        const std::string & t);
-
-    // escape tilde and slash
-    static std::string escape(std::string s);
-
-    // unescape tilde and slash
-    static void unescape(std::string& s);
-
-    static void flatten(
-        const std::string & reference_string,
-        const basic_json & value,
-        basic_json & result);
-
-    static basic_json unflatten(const basic_json & value);
-
-private:
-    friend bool operator==(
-        json_pointer const & lhs,
-        json_pointer const & rhs) noexcept;
-
-    friend bool operator!=(
-        json_pointer const & lhs,
-        json_pointer const & rhs) noexcept;
-
-private:
-    // the reference tokens
-    std::vector<std::string> reference_tokens {};
 };
 ```
+
+Exceprt from [RFC6901] / Section 3, the ABNF of the JSON pointer syntax:
+
+```
+json-pointer    = *( "/" reference-token )
+reference-token = *( unescaped / escaped )
+unescaped       = %x00-2E / %x30-7D / %x7F-10FFFF   ; %x2F ('/') and %x7E ('~') are excluded from 'unescaped'
+escaped         = "~" ( "0" / "1" )                 ; representing '~' and '/', respectively
+```
+
+
+<a name="class-json_pointer-construction"></a>
+#### Construction
+
+```cpp
+json_pointer();
+```
+
+*Effect:* Default constructor. Points to the whole JSON document.
+
+*Complexity:* Constant.
+
+```cpp
+explicit json_pointer(const std::string &);
+```
+
+*Effect*: Constructs a `json_pointer` object, initialized with the specified string.
+
+*Remarks:* The syntax of the specified string must be as described in [RFC6901] section 3.
+
+*Throws:*
+- `std::domain_error` if the specified string is non-empty and has an invalid syntax.
+
+
+<a name="class-json_pointer-non-modifying-op"></a>
+#### Non-Modifying Operators
+
+```cpp
+bool operator==(const json_pointer &) const noexcept;
+```
+
+*Effect:* Compares two JSON pointers for equality, i.e. point to the same location in
+a JSON structure.
+
+*Throws:* Nothing.
+
+```cpp
+bool operator!=(const json_pointer &) const noexcept;
+```
+
+*Effect:* Compares two JSON pointers for inequality, i.e. do not point to the same location in
+a JSON structure.
+
+*Throws:* Nothing.
+
+
+<a name="class-json_pointer-serialization"></a>
+#### Serialization
+
+```cpp
+std::string str() const;
+```
+
+*Returns:* A string representation of the JSON pointer.
+
+*Requires:* Invariance. For each `json_pointer` `ptr` it holds: `ptr == json_pointer(ptr.str())`.
+
+```cpp
+operator std::string() const;
+```
+
+*Effect:* Typecast operator. Same as member function `str()`.
 
 
 <a name="func-to_json"></a>
