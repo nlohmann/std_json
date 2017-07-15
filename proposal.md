@@ -206,7 +206,7 @@ inline namespace json_v1 {
     // hash
     template <> struct hash<json_v1::json>
     {
-        std::size_t operator()(const json_v1::basic_json &) const;
+        std::size_t operator()(const json_v1::json &) const;
     };
 }
 ```
@@ -1811,7 +1811,15 @@ be provided by the user to map custom data to JSON values.
 <a name="func-hash"></a>
 ### Template Specialization `hash`
 
-**TODO**
+```cpp
+template <> struct hash<json_v1::json>
+{
+    std::size_t operator()(const json_v1::json &) const;
+};
+```
+
+*Effect:* The template specialization to calculate the hash value for the specified
+JSON value.
 
 
 <a name="acknowledgements"></a>
