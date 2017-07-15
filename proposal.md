@@ -201,7 +201,7 @@ inline namespace json_v1 {
 }
 
     // swap
-    template <> void swap(json_v1::json &, json_v1::json &);
+    template <> void swap(json_v1::json &, json_v1::json &) noexcept( /*omitted*/ );
 
     // hash
     template <> struct hash<json_v1::json>
@@ -1805,7 +1805,14 @@ be provided by the user to map custom data to JSON values.
 <a name="func-swap"></a>
 ### Template Function Specialization `swap`
 
-**TODO**
+```cpp
+template <> void swap(json_v1::json &, json_v1::json &)
+    noexcept(
+           is_nothrow_move_constructible<json_v1::json>::value
+        && is_nothrow_move_assignable<json_v1::json>::value);
+```
+
+*Effect:* Exchanges the given JSON values.
 
 
 <a name="func-hash"></a>
