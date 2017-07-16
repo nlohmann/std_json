@@ -135,23 +135,23 @@ json data = {
 For the given example `data` the following table shows the result for various
 JSON pointers (see [RFC6901):
 
-    JSON Pointer           | Result
-    ---------------------- | -------
-    `"/pi"`                | 3.414
-    `"/anser/everything"`  | 42
-    `"/list/2"`            | 1
+    JSON Pointer            | Result
+    ----------------------- | -------
+    `"/pi"`                 | 3.414
+    `"/anwser/everything"`  | 42
+    `"/list/2"`             | 1
 
 written in code:
 
 ```cpp
-const json::json_pointer p = "/anser/everything";
+const json::json_pointer p = "/answer/everything";
 data[p] = 42;
 ```
 
 For convenience, there is also an user defined literal:
 
 ```cpp
-data["/anser/everything"_json_pointer] = 42;
+data["/answer/everything"_json_pointer] = 42;
 ```
 
 
