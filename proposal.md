@@ -19,7 +19,7 @@ It proposes a library extension.
 - [Motivation](#motivation)
 - [Example](#example)
 - [Scope](#scope)
-- [Terminology](#terminology)
+- [Terms and definitions](#terms-defs)
 - [Technical Specification](#tech-spec)
   - [Header `<json>` synopsis](#header-synopsis)
   - [Enumeration `json_type`](#enum-json_type)
@@ -50,13 +50,16 @@ It proposes a library extension.
 <a name="motivation"></a>
 ## Motivation
 
-Data represented in JSON format is very widely used for serialization of data. Prominent uses are the numerous frameworks used by websites for asynchronous communication, as well as configuration data.
+Data represented in JSON format is very widely used for serialization of data. Prominent
+uses are the numerous frameworks used by websites for asynchronous communication, as well
+as configuration data.
 
 The format itself is human readable and very lightweight.
 
 There are numerous libraries written in C and C++, usable by C++, but none in the standard.
 
-The goal should be a library extension that fits well into the standard library, customizable and with an user friendly interface.
+The goal should be a library extension that fits well into the standard library, customizable
+and with an user friendly interface.
 
 
 <a name="example"></a>
@@ -159,16 +162,17 @@ data["/answer/everything"_json_pointer] = 42;
 ## Scope
 
 This extension is a pure library extension. It does not require changes to the standard components.
-The extension can be implemented in C++11, C++14, and C++17.
+The extension can be implemented in C++17.
 
 
-<a name="terminology"></a>
-## Terminology
+<a name="terms-defs"></a>
+## Terms and definitions
 
-The terminology used in this paper is intended to be consistent with terms used in 
-the JSON world [RFC7159].
+The terminology used in this paper is intended to be consistent with terms used in
+the JSON domain [RFC7159].
 
-The term *value* [RFC7159 / chapter 3] refers to an entity that represents information and can be
+### value
+The term *value* ([RFC7159] chapter 3) refers to an entity that represents information and can be
 one of the following:
 
 - object
@@ -178,16 +182,27 @@ one of the following:
 - boolean
 - null
 
+### boolean
 Values for *boolean* can be
-
 - true
 - false
 
-The term *object* [RFC7159 / chapter 4] refers to an structured entity, consisting of zero or more name/value pairs. The term *name* refers to the key that identifies an entity. This is always of type *string*.
+### object
+The term *object* ([RFC7159] chapter 4) refers to an structured entity, consisting of zero
+or more name/value pairs. The term *name* refers to the key that identifies an entity. This
+is always of type *string*.
 
-The term *array* [RFC7159 / chapter 5] refers to an structured entity, consisting of zero or more values of any type.
+### array
+The term *array* ([RFC7159] chapter 5) refers to an structured entity, consisting of zero or
+more values of any type.
 
-The term *number* [RFC7159 / chapter 6] represents a numerical value and is one of the following types:
+### string
+The term *string* ([RFC7169] chapter 7) refers to a string consisting of zero
+or more unicode characters, beginning and ending with quotation marks.
+
+### number
+The term *number* ([RFC7159] chapter 6) represents a numerical value and is one of the
+following types:
 
 - integral signed
 - integral unsigned
@@ -516,7 +531,7 @@ The value of the parameter `automatic_type_deduction` controls the following beh
   of the elements in the initializer list.
 
 *Complexity:* The same complexity to create the underlying data structure defined
-by `ArrayType` or `ObjectType`, and linear time in size of the initializer list. 
+by `ArrayType` or `ObjectType`, and linear time in size of the initializer list.
 
 ```cpp
 static basic_json array(std::initializer_list<basic_json> = std::initializer_list<basic_json>{});
@@ -530,7 +545,7 @@ type `json_type::array` and `json_type::object` for empty initializer lists and 
 containing pairs.
 
 *Complexity:* The same complexity to create the underlying data structure defined by `ArrayType`
-and linear time in size of the initializer list. 
+and linear time in size of the initializer list.
 
 ```cpp
 static basic_json object(std::initializer_list<basic_json> = std::initializer_list<basic_json>{});
@@ -550,7 +565,7 @@ containing pairs.
   it is not possible to create all pairs.
 
 *Complexity:* The same complexity to create the underlying data structure defined by `ObjectType`
-and linear time in size of the initializer list. 
+and linear time in size of the initializer list.
 
 
 <a name="class-basic_json-destruction"></a>
