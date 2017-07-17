@@ -1,7 +1,7 @@
 | Document Number | ???                                       |
 |-----------------|-------------------------------------------|
 | Date            | ???                                       |
-| Project         | Programming Language C++, Library Working Group |
+| Project         | Programming Language C++, Library Evolution Working Group |
 | Reply-to        | Niels Lohmann <<mail@nlohmann.me>><br>Mario Konrad <<mario.konrad@gmx.net>> |
 
 # JSON parser and generator library
