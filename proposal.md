@@ -17,7 +17,18 @@ It proposes a library extension.
 ## Table of Contents
 
 - [Motivation](#motivation)
-- [Example](#example)
+- [Design Goals](#design-goals)
+- [Examples](#examples)
+  - [Handling in C++](#examples-handling-in-cpp)
+  - [Serialization / Deserialization](#examples-serialization-deserialization)
+    - [Literals](#examples-ser-literals)
+    - [Parsing](#examples-ser-parse)
+    - [Stringify](#examples-ser-stringify)
+    - [Read from iterator range](#examples-ser-iterator-range)
+    - [Playing nice with streams](#examples-ser-streams)
+    - [STL like access](#examples-ser-stl-access)
+  - [Access using JSON pointers](#examples-acces-json-pointers)
+  - [Support for JSON patch](#examples-json-patch)
 - [Scope](#scope)
 - [Terms and definitions](#terms-defs)
 - [Technical Specification](#tech-spec)
@@ -58,12 +69,33 @@ The format itself is human readable and very lightweight.
 
 There are numerous libraries written in C and C++, usable by C++, but none in the standard.
 
-The goal should be a library extension that fits well into the standard library, customizable
-and with an user friendly interface.
+<a name="design-goals"></a>
+## Design Goals
+
+Major:
+
+- **Intuitive syntax**. In languages such as Python, JSON feels like a first class data type.
+  Handling JSON in C++ should be as easy in an idiomatic way.
+
+- **Ease of use**. Library extension wich provides easy access and handling of data.
+  Customizable for user defined data. Value semantics. This library extension aims to
+  provide a DOM (domain object model), residing in memory, like other containers.
+
+- **Arbirary Data**. Handling of JSON at runtime to be able to process arbitrary data.
+  No compile time structure definitions.
+
+- **Integration**. Playing nice with existing containers and algorithms in the standard library.
+
+Minor:
+
+- **Speed**. This proposal does not primarily focus on run time performance while sacrificing
+  the major design goals. Unnecessary overhead should be avoided, but not at all costs.
+  This may not suit everyone everywhere, but for a presumably large audience performace is
+  good enough while providing a fairly easy data structure to work with.
 
 
-<a name="example"></a>
-### Example: representation of data in JSON and handling in C++
+<a name="examples"></a>
+## Examples
 
 For the following examples, let's consider this JSON data:
 
@@ -76,7 +108,7 @@ For the following examples, let's consider this JSON data:
     "answer": {
         "everything": 42
     },
-    "list": [0, 1, 2],
+    "list": [0, 3, 6, 9, 12],
     "object": {
         "currency": "USD",
         "value": 42.99
@@ -84,7 +116,8 @@ For the following examples, let's consider this JSON data:
 }
 ```
 
-##### Handling in C++
+<a name="examples-handling-in-cpp"></a>
+### Handling in C++
 
 Elements can be accessed comfortably using index operators:
 
@@ -108,7 +141,7 @@ data["nothing"] = nullptr;
 data["answer"]["everything"] = 42;
 
 // array of objects
-data["list"] = { 0, 1, 2 };
+data["list"] = { 0, 3, 6, 9, 12 };
 
 // object, defined as list of pairs
 data["object"] = {{ "currency", "USD" }, { "value", 42.99 }};
@@ -125,7 +158,7 @@ json data = {
     { "answer",
         { "everything", 42 }
     },
-    { "list", { 0, 1, 2 }},
+    { "list", { 0, 3, 6, 9, 12 }},
     { "object", {
         { "currency", "USD" },
         { "value", 42.99 }
@@ -133,16 +166,209 @@ json data = {
 };
 ```
 
-##### Access using JSON pointers
+Of course there is also support for explicit JSON value construction, in case
+the implicit does not suit the users needs. For example:
+
+```cpp
+// a way to express the empty array []
+json empty_array_explicit = json::array();
+
+// ways to express the empty object {}
+json empty_object_implicit = json({});
+json empty_object_explicit = json::object();
+
+// a way to express an _array_ of key/value pairs [["currency", "USD"], ["value", 42.99]]
+json array_not_object = { json::array({"currency", "USD"}), json::array({"value", 42.99}) };
+```
+
+<a name="examples-serialization-deserialization"></a>
+### Serialization / Deserialization
+
+
+<a name="examples-ser-literals"></a>
+#### Literals
+Creating JSON data from a given string is straight forward:
+
+```cpp
+// create object from string literal
+json j = "{ \"happy\": true, \"pi\": 3.141 }"_json;
+
+// or even nicer with a raw string literal
+auto j2 = R"(
+  {
+    "happy": true,
+    "pi": 3.141
+  }
+)"_json;
+```
+
+<a name="examples-ser-parse"></a>
+#### Parsing
+
+Note that without appending the `_json` suffix, the passed string literal is not parsed,
+but just used as JSON string value. That is, `json j = "{ \"happy\": true, \"pi\": 3.141 }"`
+would just store the string `"{ "happy": true, "pi": 3.141 }"` rather than parsing the
+actual JSON value.
+
+The above example can also be expressed explicitly using `json::parse()`:
+
+```cpp
+// parse explicitly
+auto j3 = json::parse("{ \"happy\": true, \"pi\": 3.141 }");
+```
+
+<a name="examples-ser-stringify"></a>
+#### Stringify
+
+You can also get a string representation (serialize):
+
+```cpp
+// explicit conversion to string
+std::string s = j.str();  
+assert(s == "{\"happy\":true,\"pi\":3.141}");
+
+// serialization with pretty printing
+// pass in the amount of spaces to indent
+std::cout << j.str(4) << std::endl;
+```
+
+This yields the output on the console:
+```
+{
+    "happy": true,
+    "pi": 3.141
+}
+```
+
+<a name="examples-ser-streams"></a>
+#### Playing nice with streams
+
+The JSON value as proposed plays nice with streams:
+
+```cpp
+// deserialize from standard input
+json j;
+std::cin >> j;
+
+// serialize to standard output
+std::cout << j;
+
+// the setw manipulator is overloaded to set the indentation for pretty printing
+std::cout << std::setw(4) << j << std::endl;
+```
+
+These operators work for any subclasses of `std::istream` or `std::ostream`.
+Here is the same example with files:
+
+```cpp
+// read a JSON file
+std::ifstream ifs("config.json");
+json j;
+ifs >> j;
+
+// write prettified JSON to another file
+std::ofstream ofs("pretty.json");
+ofs << std::setw(4) << j << std::endl;
+```
+
+<a name="examples-ser-iterator-range"></a>
+#### Read from iterator range
+
+It is also possible to read JSON from an iterator range; that is, from any container
+accessible by iterators whose content is stored as contiguous byte sequence, for
+instance a `std::vector<uint8_t>`:
+
+```cpp
+std::vector<uint8_t> v = {'t', 'r', 'u', 'e'};
+json j = json::parse(v.begin(), v.end());
+```
+
+You may leave the iterators for the range `[begin, end)`:
+
+```cpp
+std::vector<uint8_t> v = {'t', 'r', 'u', 'e'};
+json j = json::parse(v);
+```
+
+
+<a name="examples-ser-stl-access"></a>
+#### STL like access
+
+The proposed JSON value satisfies *Reversible Container* requirement.
+
+Example JSON arrays (handling like `std::vector`):
+```cpp
+// create an array using push_back: ["foo", 1, true]
+json j;
+j.push_back("foo");
+j.push_back(1);
+j.push_back(true);
+
+// also use emplace_back, now: ["foo", 1, true, 1.78]
+j.emplace_back(1.78);
+
+// iterate the array
+for (json::iterator it = j.begin(); it != j.end(); ++it) {
+  std::cout << *it << '\n';
+}
+
+// range-based for
+for (auto & element : j) {
+  std::cout << element << '\n';
+}
+
+// indexed access
+const std::string tmp = j[0];
+j[1] = 42;
+bool foo = j.at(2);
+
+// comparison
+assert(j == "[\"foo\", 1, true]"_json);
+
+// container operations
+assert(j.size() == 3);
+assert(j.empty() == false);
+assert(j.type() == json_type::array);
+j.clear();    // the array is empty again
+```
+
+Example JSON objects (handling like `std::map`):
+```cpp
+// create an object: {"foo":23, "bar":false}
+json o;
+o["foo"] = 23;
+o["bar"] = false;
+
+// also use emplace, now: {"foo":23, "bar":false, "weather":"sunny"}
+o.emplace("weather", "sunny");
+
+// find an entry
+if (o.find("foo") != o.end()) {
+  // there is an entry with key "foo"
+}
+
+// or simpler using count()
+assert(o.count("foo") == 1);
+assert(o.count("fob") == 0);
+
+// special iterator member functions for objects
+for (json::iterator it = o.begin(); it != o.end(); ++it) {
+  std::cout << it.key() << " : " << it.value() << "\n";
+}
+```
+
+
+<a name="examples-acces-json-pointers"></a>
+### Access using JSON pointers
 
 For the given example `data` the following table shows the result for various
-JSON pointers (see [RFC6901):
+JSON pointers (see [RFC6901). This is an alternative to address structured values.
 
     JSON Pointer            | Result
     ----------------------- | -------
     `"/pi"`                 | 3.414
     `"/anwser/everything"`  | 42
-    `"/list/2"`             | 1
+    `"/list/1"`             | 3
 
 written in code:
 
@@ -155,6 +381,52 @@ For convenience, there is also an user defined literal:
 
 ```cpp
 data["/answer/everything"_json_pointer] = 42;
+```
+
+
+<a name="examples-json-patch"></a>
+### Support for JSON patch
+
+JSON patch [RFC6902] is supported, which allows to describe differences between two
+JSON values - effectively allowing patch and diff operations known from Unix.
+
+```cpp
+// a JSON value
+json j_original = R"({
+  "baz": ["one", "two", "three"],
+  "foo": "bar"
+})"_json;
+
+// a JSON patch (RFC 6902)
+json j_patch = R"([
+  { "op": "replace", "path": "/baz", "value": "boo" },
+  { "op": "add", "path": "/hello", "value": ["world"] },
+  { "op": "remove", "path": "/foo"}
+])"_json;
+
+// apply the patch
+json j_result = j_original.patch(j_patch);
+```
+results in:
+```
+{
+   "baz": "boo",
+   "hello": ["world"]
+}
+```
+
+Computing the difference:
+```cpp
+// calculate a JSON patch from two JSON values
+json::diff(j_result, j_original);
+```
+results in:
+```
+[
+  { "op":" replace", "path": "/baz", "value": ["one", "two", "three"] },
+  { "op": "remove","path": "/hello" },
+  { "op": "add", "path": "/foo", "value": "bar" }
+]
 ```
 
 
