@@ -1,6 +1,6 @@
-| Document Number | ???                                       |
+| Document Number | P0760R0                                   |
 |-----------------|-------------------------------------------|
-| Date            | ???                                       |
+| Date            | 2017-07-20                                |
 | Project         | Programming Language C++, Library Evolution Working Group |
 | Reply-to        | Niels Lohmann <<mail@nlohmann.me>><br>Mario Konrad <<mario.konrad@gmx.net>> |
 
