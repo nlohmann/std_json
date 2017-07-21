@@ -1,6 +1,6 @@
 | Document Number | P0760R0                                   |
 |-----------------|-------------------------------------------|
-| Date            | 2017-07-20                                |
+| Date            | 2017-07-21                                |
 | Project         | Programming Language C++, Library Evolution Working Group |
 | Reply-to        | Niels Lohmann <<mail@nlohmann.me>><br>Mario Konrad <<mario.konrad@gmx.net>> |
 
@@ -224,7 +224,7 @@ You can also get a string representation (serialize):
 
 ```cpp
 // explicit conversion to string
-std::string s = j.str();  
+std::string s = j.str();
 assert(s == "{\"happy\":true,\"pi\":3.141}");
 
 // serialization with pretty printing
@@ -538,16 +538,18 @@ inline namespace json_v1 {
 enum class json_type : /*unspecified*/
 {
     null                     = /*unspecified*/ ,
-    object                   = /*unspecified*/ ,
-    array                    = /*unspecified*/ ,
-    string                   = /*unspecified*/ ,
     boolean                  = /*unspecified*/ ,
     number_integral_signed   = /*unspecified*/ ,
     number_integral_unsigned = /*unspecified*/ ,
     number_floating_point    = /*unspecified*/ ,
-    discarded                = /*unspecified*/
+    string                   = /*unspecified*/ ,
+    array                    = /*unspecified*/ ,
+    object                   = /*unspecified*/
 };
 ```
+
+*Remarks:* The semantics of the enumerators is ascending nature. This will be
+relevant for lexicographical ordering.
 
 
 <a name="class-basic_json"></a>
@@ -657,7 +659,6 @@ will be initialized, according to the following table:
   `json_type::number_integer`  | `0`
   `json_type::number_unsigned` | `0`
   `json_type::number_float`    | `0.0`
-  `json_type::discarded`       | -
 
 *Throws:* Nothing.
 
@@ -874,7 +875,7 @@ basic_json & operator=(basic_json &&) noexcept( /*omitted*/ );
 #### Non-Modifying Operators
 
 ```cpp
-bool operator==(const_reference) const noexcept;
+friend bool operator==(const_reference lhs, const_reference rhs) noexcept;
 ```
 
 *Effect:* Compares two JSON values for equality according to the following rules:
@@ -893,8 +894,8 @@ bool operator==(const_reference) const noexcept;
 
 *Complexity:* Type dependent:
 
-  Value type                 | Complexity
-  -------------------------- | ----------
+  Value type                   | Complexity
+  ---------------------------- | ----------
   `json_type::null`            | constant
   `json_type::object`          | depending on comparison of equality of `ObjectType`
   `json_type::array`           | depending on comparison of equality of `ArrayType`
@@ -903,7 +904,47 @@ bool operator==(const_reference) const noexcept;
   `json_type::number_integer`  | constant
   `json_type::number_unsigned` | constant
   `json_type::number_float`    | constant
-  `json_type::discarded`       | constant
+
+```cpp
+friend bool operator!=(const_reference lhs, const_reference rhs) noexcept;
+```
+
+*Effect:* Compares two JSON values for inequality by calculating the equivalent
+of `not (lhs == rhs)`.
+
+*Throws:* Nothing.
+
+*Complexity:* Equal to `operator==(const_reference)`.
+
+```cpp
+friend bool operator< (const_reference lhs, const_reference rhs) noexcept;  // (1)
+friend bool operator<=(const_reference lhs, const_reference rhs) noexcept;  // (2)
+friend bool operator> (const_reference lhs, const_reference rhs) noexcept;  // (3)
+friend bool operator>=(const_reference lhs, const_reference rhs) noexcept;  // (4)
+```
+
+*Effect:* Lexicographical comparison for *less* (1), *less or equal* (2), *greater* (3)
+and *greater or equal* (4). The following rules apply:
+
+1. First comparison of `type()`: the types are in ascending order as specified by `json_type`.
+   If both, `lhs` and `rhs` are of type `json_type::null`, the result is always `false`.
+2. Second comparison if `type()` of `lhs` and `rhs` is the same: lexicographical comparison
+   of the contained data type.
+
+*Throws:* Nothing.
+
+*Complexity:* Type dependent:
+
+  Value type                   | Complexity
+  ---------------------------- | ----------
+  `json_type::null`            | constant
+  `json_type::object`          | depending on lexicographical comparison `ObjectType`
+  `json_type::array`           | depending on lexicographical comparison `ArrayType`
+  `json_type::string`          | depending on lexicographical comparison `StringType`
+  `json_type::boolean`         | constant
+  `json_type::number_integer`  | constant
+  `json_type::number_unsigned` | constant
+  `json_type::number_float`    | constant
 
 
 ```cpp
@@ -918,17 +959,6 @@ friend bool operator==(const Scalartype, const_reference) noexcept;
 value into a JSON value, followed by a comparison of equality.
 
 *Remarks:* Same properties as `bool operator==(const_reference) noexcept;`
-
-```cpp
-bool operator!=(const_reference) const noexcept;
-```
-
-*Effect:* Compares two JSON values for inequality by calculating the equivalent
-of `not (lhs == rhs)`.
-
-*Throws:* Nothing.
-
-*Complexity:* Equal to `operator==(const_reference)`.
 
 ```cpp
 template <typename ScalarType, /*SFINAE omitted*/ >
@@ -1049,7 +1079,6 @@ The return value depends on the different types and is defined as follows:
   `json_type::number_floating_point`     | `false`
   `json_type::object`                    | result of function `object_type::empty()`
   `json_type::array`                     | result of function `array_type::empty()`
-  `json_type::discarded`                 | `false`
 
 *Remarks:* This function does not return whether a string stored as JSON value
 is empty - it returns whether the JSON container itself is empty which is
@@ -1082,7 +1111,6 @@ The return value depends on the different types and is defined as follows:
   `json_type::number_floating_point`     | `1`
   `json_type::object`                    | result of function `object_type::size()`
   `json_type::array`                     | result of function `array_type::size()`
-  `json_type::discarded`                 | `0`
 
 *Remarks:* This function does not return the length of a string stored as JSON
 value - it returns the number of elements in the JSON value which is `1` in the case of a string.
@@ -1116,7 +1144,6 @@ The return value depends on the different types and is defined as follows:
   `json_type::number_floating_point`     | `1` (same as `size()`)
   `json_type::object`                    | result of function `object_type::max_size()`
   `json_type::array`                     | result of function `array_type::max_size()`
-  `json_type::discarded`                 | `0` (same as `size()`)
 
 *Remarks:* This function helps `basic_json` satisfying the [Container](http://en.cppreference.com/w/cpp/concept/Container)
 requirements:
