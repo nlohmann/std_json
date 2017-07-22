@@ -1,6 +1,6 @@
 | Document Number | P0760R0                                   |
 |-----------------|-------------------------------------------|
-| Date            | 2017-07-21                                |
+| Date            | 2017-07-22                                |
 | Project         | Programming Language C++, Library Evolution Working Group |
 | Reply-to        | Niels Lohmann <<mail@nlohmann.me>><br>Mario Konrad <<mario.konrad@gmx.net>> |
 
@@ -18,6 +18,7 @@ It proposes a library extension.
 
 - [Motivation](#motivation)
 - [Design Goals](#design-goals)
+- [Scope](#scope)
 - [Examples](#examples)
   - [Handling in C++](#examples-handling-in-cpp)
   - [Serialization / Deserialization](#examples-serialization-deserialization)
@@ -29,7 +30,6 @@ It proposes a library extension.
     - [STL like access](#examples-ser-stl-access)
   - [Access using JSON pointers](#examples-acces-json-pointers)
   - [Support for JSON patch](#examples-json-patch)
-- [Scope](#scope)
 - [Terms and definitions](#terms-defs)
 - [Technical Specification](#tech-spec)
   - [Header `<json>` synopsis](#header-synopsis)
@@ -92,6 +92,13 @@ Minor:
   the major design goals. Unnecessary overhead should be avoided, but not at all costs.
   This may not suit everyone everywhere, but for a presumably large audience performace is
   good enough while providing a fairly easy data structure to work with.
+
+
+<a name="scope"></a>
+## Scope
+
+This extension is a pure library extension. It does not require changes to the standard components.
+The extension can be implemented in C++17.
 
 
 <a name="examples"></a>
@@ -428,13 +435,6 @@ results in:
   { "op": "add", "path": "/foo", "value": "bar" }
 ]
 ```
-
-
-<a name="scope"></a>
-## Scope
-
-This extension is a pure library extension. It does not require changes to the standard components.
-The extension can be implemented in C++17.
 
 
 <a name="terms-defs"></a>
