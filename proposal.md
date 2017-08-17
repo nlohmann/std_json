@@ -1,6 +1,6 @@
 | Document Number | P0760R0                                   |
 |-----------------|-------------------------------------------|
-| Date            | 2017-07-22                                |
+| Date            | 2017-08-17                                |
 | Project         | Programming Language C++, Library Evolution Working Group |
 | Reply-to        | Niels Lohmann <<mail@nlohmann.me>><br>Mario Konrad <<mario.konrad@gmx.net>> |
 
@@ -21,13 +21,15 @@ It proposes a library extension.
 - [Scope](#scope)
 - [Examples](#examples)
   - [Handling in C++](#examples-handling-in-cpp)
-  - [Serialization / Deserialization](#examples-serialization-deserialization)
-    - [Literals](#examples-ser-literals)
-    - [Parsing](#examples-ser-parse)
-    - [Stringify](#examples-ser-stringify)
-    - [Read from iterator range](#examples-ser-iterator-range)
-    - [Playing nice with streams](#examples-ser-streams)
-    - [STL like access](#examples-ser-stl-access)
+  - [Literals](#examples-literals)
+  - [Parsing](#examples-parse)
+  - [Stringify](#examples-stringify)
+  - [Read from iterator range](#examples-iterator-range)
+  - [Playing nice with streams](#examples-streams)
+  - [STL like access](#examples-stl-access)
+  - [Conversion from STL containers](#examples-conv-from-stl)
+  - [Implicit Conversions](#examples-implicit-conv)
+  - [Arbitrary Type Conversions](#examples-arbitrary-conv)
   - [Access using JSON pointers](#examples-acces-json-pointers)
   - [Support for JSON patch](#examples-json-patch)
 - [Terms and definitions](#terms-defs)
@@ -190,12 +192,9 @@ json empty_object_explicit = json::object();
 json array_not_object = { json::array({"currency", "USD"}), json::array({"value", 42.99}) };
 ```
 
-<a name="examples-serialization-deserialization"></a>
-### Serialization / Deserialization
 
-
-<a name="examples-ser-literals"></a>
-#### Literals
+<a name="examples-literals"></a>
+### Literals
 Creating JSON data from a given string is straight forward:
 
 ```cpp
@@ -211,8 +210,8 @@ auto j2 = R"(
 )"_json;
 ```
 
-<a name="examples-ser-parse"></a>
-#### Parsing
+<a name="examples-parse"></a>
+### Parsing
 
 Note that without appending the `_json` suffix, the passed string literal is not parsed,
 but just used as JSON string value. That is, `json j = "{ \"happy\": true, \"pi\": 3.141 }"`
@@ -226,8 +225,8 @@ The above example can also be expressed explicitly using `json::parse()`:
 auto j3 = json::parse("{ \"happy\": true, \"pi\": 3.141 }");
 ```
 
-<a name="examples-ser-stringify"></a>
-#### Stringify
+<a name="examples-stringify"></a>
+### Stringify
 
 You can also get a string representation (serialize):
 
@@ -249,8 +248,8 @@ This yields the output on the console:
 }
 ```
 
-<a name="examples-ser-streams"></a>
-#### Playing nice with streams
+<a name="examples-streams"></a>
+### Playing nice with streams
 
 The JSON value as proposed plays nice with streams:
 
@@ -280,8 +279,8 @@ std::ofstream ofs("pretty.json");
 ofs << std::setw(4) << j << std::endl;
 ```
 
-<a name="examples-ser-iterator-range"></a>
-#### Read from iterator range
+<a name="examples-iterator-range"></a>
+### Read from iterator range
 
 It is also possible to read JSON from an iterator range; that is, from any container
 accessible by iterators whose content is stored as contiguous byte sequence, for
@@ -300,8 +299,8 @@ json j = json::parse(v);
 ```
 
 
-<a name="examples-ser-stl-access"></a>
-#### STL like access
+<a name="examples-stl-access"></a>
+### STL like access
 
 The proposed JSON value satisfies *Reversible Container* requirement.
 
@@ -365,6 +364,176 @@ for (json::iterator it = o.begin(); it != o.end(); ++it) {
   std::cout << it.key() << " : " << it.value() << "\n";
 }
 ```
+
+<a name="examples-conv-from-stl"></a>
+### Conversion from STL containers
+
+Any sequence container (`std::array`, `std::vector`, `std::deque`, `std::forward_list`,
+`std::list`) whose values can be used to construct JSON types (e.g., integers, floating point
+numbers, booleans, string types, or again STL containers described in this section) can be used
+to create a JSON array.
+
+The same holds for similar associative containers (`std::set`, `std::multiset`,
+`std::unordered_set`, `std::unordered_multiset`), but in these cases the order of the
+elements of the array depends how the elements are ordered in the respective STL container.
+
+Examples:
+```cpp
+std::vector<int> c_vector {1, 2, 3, 4};
+json j_vec(c_vector); // [1, 2, 3, 4]
+
+std::deque<double> c_deque {1.2, 2.3, 3.4, 5.6};
+json j_deque(c_deque); // [1.2, 2.3, 3.4, 5.6]
+
+std::list<bool> c_list {true, true, false, true};
+json j_list(c_list); // [true, true, false, true]
+
+std::forward_list<int64_t> c_flist {12345678909876, 23456789098765, 34567890987654, 45678909876543};
+json j_flist(c_flist); // [12345678909876, 23456789098765, 34567890987654, 45678909876543]
+
+std::array<unsigned long, 4> c_array {{1, 2, 3, 4}};
+json j_array(c_array); // [1, 2, 3, 4]
+
+std::set<std::string> c_set {"one", "two", "three", "four", "one"};
+json j_set(c_set); // only one entry for "one" is used: ["four", "one", "three", "two"]
+
+std::unordered_set<std::string> c_uset {"one", "two", "three", "four", "one"};
+json j_uset(c_uset); // only one entry for "one" is used, maybe ["two", "three", "four", "one"]
+
+std::multiset<std::string> c_mset {"one", "two", "one", "four"};
+json j_mset(c_mset); // both entries for "one" are used, maybe ["one", "two", "one", "four"]
+
+std::unordered_multiset<std::string> c_umset {"one", "two", "one", "four"};
+json j_umset(c_umset); // both entries for "one" are used, maybe ["one", "two", "one", "four"]
+```
+
+Likewise, any associative key-value containers (`std::map`, `std::multimap`,
+`std::unordered_map`, `std::unordered_multimap`) whose keys can construct an `std::string` and
+whose values can be used to construct JSON types (see examples above) can be used to to create
+a JSON object. Note that in case of multimaps only one key is used in the JSON object and the
+value depends on the internal order of the STL container.
+
+Examples:
+```cpp
+std::map<std::string, int> c_map {{"one", 1}, {"two", 2}, {"three", 3}};
+json j_map(c_map); // {"one": 1, "three": 3, "two": 2}
+
+std::unordered_map<const char*, double> c_umap {{"one", 1.2}, {"two", 2.3}, {"three", 3.4}};
+json j_umap(c_umap); // {"one": 1.2, "two": 2.3, "three": 3.4}
+
+std::multimap<std::string, bool> c_mmap {{"one", true}, {"two", true}, {"three", false}, {"three", true}};
+json j_mmap(c_mmap); // only one entry for key "three" is used, maybe {"one": true, "two": true, "three": true}
+
+std::unordered_multimap<std::string, bool> c_ummap {{"one", true}, {"two", true}, {"three", false}, {"three", true}};
+json j_ummap(c_ummap); // only one entry for key "three" is used, maybe {"one": true, "two": true, "three": true}
+```
+
+<a name="examples-implicit-conv"></a>
+### Implicit Conversions
+
+The type of the JSON object is determined automatically by the expression to store.
+Likewise, the stored value is implicitly converted.
+
+Examples:
+```cpp
+// strings
+std::string s1 = "Hello, world!";
+json js = s1;
+std::string s2 = js;
+
+// booleans
+bool b1 = true;
+json jb = b1;
+bool b2 = jb;
+
+// numbers
+int i = 42;
+json jn = i;
+double f = jn;
+```
+
+You can also explicitly ask for the value:
+
+```cpp
+std::string vs = js.as<std::string>();
+bool vb = jb.as<bool>();
+int vi = jn.as<int>();
+```
+
+<a name="examples-arbitrary-conv"></a>
+### Arbitrary Type Conversions
+
+Every type can be serialized in JSON, not just STL-containers and scalar types. Usually,
+you would do something along those lines:
+
+```cpp
+namespace ns {
+    // a simple struct to model a person
+    struct person {
+        std::string name;
+        std::string address;
+        int age;
+    };
+}
+
+ns::person p = {"Ned Flanders", "744 Evergreen Terrace", 60};
+
+// convert to JSON: copy each value into the JSON object
+json j;
+j["name"] = p.name;
+j["address"] = p.address;
+j["age"] = p.age;
+
+// ...
+
+// convert from JSON: copy each value from the JSON object
+ns::person p {
+    j["name"].get<std::string>(),
+    j["address"].get<std::string>(),
+    j["age"].get<int>()
+};
+```
+
+Through customization points, this boilerplate can be replaced to simplify the code:
+```cpp
+// create a person
+ns::person p {"Ned Flanders", "744 Evergreen Terrace", 60};
+
+// conversion: person -> json
+json j = p;
+
+std::cout << j << std::endl;
+// {"address":"744 Evergreen Terrace","age":60,"name":"Ned Flanders"}
+
+// conversion: json -> person
+ns::person p2 = j;
+
+// that's it
+assert(p == p2);
+```
+
+This is achieved by providing conversion function for the custom type:
+```cpp
+using std::experimental::json;
+
+namespace ns {
+    void to_json(json & j, const person & p)
+    {
+        j = json{{"name", p.name}, {"address", p.address}, {"age", p.age}};
+    }
+
+    void from_json(const json & j, person & p)
+    {
+        p.name = j["name"].as<std::string>();
+        p.address = j["address"].as<std::string>();
+        p.age = j["age"].as<int>();
+    }
+} // namespace ns
+```
+
+Requirements for the custom type:
+- DefaultConstructible
+
 
 
 <a name="examples-acces-json-pointers"></a>
