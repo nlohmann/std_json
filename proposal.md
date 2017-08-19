@@ -1,6 +1,6 @@
 | Document Number | P0760R0                                   |
 |-----------------|-------------------------------------------|
-| Date            | 2017-08-17                                |
+| Date            | 2017-08-18                                |
 | Project         | Programming Language C++, Library Evolution Working Group |
 | Reply-to        | Niels Lohmann <<mail@nlohmann.me>><br>Mario Konrad <<mario.konrad@gmx.net>> |
 
@@ -37,6 +37,7 @@ It proposes a library extension.
   - [Header `<json>` synopsis](#header-synopsis)
   - [Enumeration `json_type`](#enum-json_type)
   - [Class Template `json_serializer`](#class-json_serializer)
+  - [Class Template `json_parser`](#class-json_parser)
   - [Class Template `json_policy`](#class-json_policy)
   - [Class Template `basic_json`](#class-basic_json)
     - [Construction](#class-basic_json-construction)
@@ -52,10 +53,10 @@ It proposes a library extension.
     - [Construction](#class-json_pointer-construction)
     - [Non-Modifying Operators](#class-json_pointer-non-modifying-op)
     - [Serialization](#class-json_pointer-serialization)
-  - [Free Functions `to_json`](#func-to_json)
-  - [Free Functions `from_json`](#func-from_json)
+  - [Function Templates `to_json`](#func-to_json)
+  - [Function Templates `from_json`](#func-from_json)
+  - [Function Templates `make_json`](#func-make_json)
   - [User Defined Literals](#func-user-defined-literals)
-  - [Free Factory Functions](#func-factory)
   - [Template Function Specialization `swap`](#func-swap)
   - [Template Specialization `hash`](#func-hash)
 - [Acknowledgements](#acknowledgements)
@@ -218,11 +219,11 @@ but just used as JSON string value. That is, `json j = "{ \"happy\": true, \"pi\
 would just store the string `"{ "happy": true, "pi": 3.141 }"` rather than parsing the
 actual JSON value.
 
-The above example can also be expressed explicitly using `json::parse()`:
+The above example can also be expressed explicitly using `make_json(...)`:
 
 ```cpp
 // parse explicitly
-auto j3 = json::parse("{ \"happy\": true, \"pi\": 3.141 }");
+auto j3 = make_json("{ \"happy\": true, \"pi\": 3.141 }");
 ```
 
 <a name="examples-stringify"></a>
@@ -288,14 +289,14 @@ instance a `std::vector<uint8_t>`:
 
 ```cpp
 std::vector<uint8_t> v = {'t', 'r', 'u', 'e'};
-json j = json::parse(v.begin(), v.end());
+json j = make_json(v.begin(), v.end());
 ```
 
 You may leave the iterators for the range `[begin, end)`:
 
 ```cpp
 std::vector<uint8_t> v = {'t', 'r', 'u', 'e'};
-json j = json::parse(v);
+json j = make_json(v);
 ```
 
 
@@ -673,6 +674,9 @@ inline namespace json_v1 {
     // Serializier, customization point
     template < /*omitted*/ > class json_serializer;
 
+    // Parser, customization point
+    template <class Base> class json_parser;
+
     // Policy class to configure the basic_json class template
     template < /*omitted*/ > struct json_policy;
 
@@ -685,8 +689,8 @@ inline namespace json_v1 {
     // function templates `from_json` for various types, customization points
     // ...
 
-    // factory functions
-    template <class Policy> basic_json<Policy> make_json( /*omitted*/ );
+    // function templates `make_json`
+    // ...
 
     // default json object class
     using json = basic_json<json_policy<>>;
@@ -745,6 +749,21 @@ template <class = void, class = void> struct json_serializer
 ```
 
 
+<a name="class-json_parser"></a>
+### Class Template `json_parser`
+
+```cpp
+template <class Base> class json_parser
+{
+public:
+    template <class Iterator>
+    json_parser(Iterator first, Iterator last);
+
+    Base operator()();
+};
+```
+
+
 <a name="class-json_policy"></a>
 ### Class Template `json_policy`
 
@@ -759,6 +778,7 @@ template <
     template <class T, class U, typename... Args> class ObjectType = std::map,
     template <class U> class AllocatorType                         = std::allocator,
     template <class T, class SFINAE = void> class Serializer       = json_serializer
+    template <class Base> class Parser                             = json_parser
     >
 struct json_policy
 {
@@ -782,6 +802,8 @@ struct json_policy
     };
 
     template <class U, class SFINAE> using serializer_type = Serializer<U, SFINAE>;
+
+    template <class Base> using parser_type = Parser<Base>;
 };
 ```
 
@@ -819,6 +841,8 @@ public:
 
     template <class U, class SFINAE = void>
     using serializer_type        = typename Policy::template serializer_type<U, SFINAE>;
+
+    using parser_type            = typename Policy::template parser_type<basic_json>;
 
     // nested classes and types
 
@@ -2265,7 +2289,7 @@ operator std::string() const;
 
 
 <a name="func-to_json"></a>
-### Free Functions `to_json`
+### Function Templates `to_json`
 
 ```cpp
 template <typename BasicJsonType, typename T, /*SFINAE omitted*/>
@@ -2323,7 +2347,7 @@ be provided by the user to map custom data to JSON values.
 
 
 <a name="func-from_json"></a>
-### Free Functions `from_json`
+### Function Templates `from_json`
 
 ```cpp
 template <typename BasicJsonType>
@@ -2389,8 +2413,26 @@ be provided by the user to map custom data to JSON values.
 - Overload (11): The same complexity as to copy data into the specified list.
 
 
-<a name="func-factory"></a>
-### Free Factory Functions
+<a name="func-make_json"></a>
+### Function Templates `make_json`
+
+```cpp
+// from iterators
+template <class Iterator, class Policy = json_policy<>>
+basic_json<Policy> make_json(Iterator first, Iterator last);
+
+// from array
+template <class T, std::size_t N, class Policy = json_policy<>>
+basic_json<Policy> make_json(const T (&arr)[N]);
+
+// from string literal
+template <class CharT, class Policy = json_policy<>>
+basic_json<Policy> make_json(const std::basic_string_view<CharT> s);
+
+// from container
+template <class Container, class Policy = json_policy<> /*TODO:SFINAE*/>
+basic_json<Policy> make_json(const Container & c);
+```
 
 **TODO**
 
