@@ -1,6 +1,6 @@
 | Document Number | P0760R0                                   |
 |-----------------|-------------------------------------------|
-| Date            | 2017-08-18                                |
+| Date            | 2017-08-20                                |
 | Project         | Programming Language C++, Library Evolution Working Group |
 | Reply-to        | Niels Lohmann <<mail@nlohmann.me>><br>Mario Konrad <<mario.konrad@gmx.net>> |
 
@@ -489,9 +489,9 @@ j["age"] = p.age;
 
 // convert from JSON: copy each value from the JSON object
 ns::person p {
-    j["name"].get<std::string>(),
-    j["address"].get<std::string>(),
-    j["age"].get<int>()
+    j["name"].as<std::string>(),
+    j["address"].as<std::string>(),
+    j["age"].as<int>()
 };
 ```
 
@@ -828,8 +828,6 @@ public:
     using allocator_type         = typename policy_traits::allocator_type;
     using pointer                = typename policy_traits::pointer;
     using const_pointer          = typename policy_traits::const_pointer;
-
-    using name_type              = std::string;
 
     using boolean_type           = typename policy_traits::boolean_type;
     using integral_signed_type   = typename policy_traits::integral_signed_type;
