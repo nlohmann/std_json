@@ -1,6 +1,6 @@
 | Document Number | P0760R0                                   |
 |-----------------|-------------------------------------------|
-| Date            | 2017-08-20                                |
+| Date            | 2017-08-22                                |
 | Project         | Programming Language C++, Library Evolution Working Group |
 | Reply-to        | Niels Lohmann <<mail@nlohmann.me>><br>Mario Konrad <<mario.konrad@gmx.net>> |
 
@@ -26,12 +26,12 @@ It proposes a library extension.
   - [Stringify](#examples-stringify)
   - [Read from iterator range](#examples-iterator-range)
   - [Playing nice with streams](#examples-streams)
-  - [STL like access](#examples-stl-access)
+  - [STL-like access](#examples-stl-access)
   - [Conversion from STL containers](#examples-conv-from-stl)
   - [Implicit Conversions](#examples-implicit-conv)
   - [Arbitrary Type Conversions](#examples-arbitrary-conv)
-  - [Access using JSON pointers](#examples-acces-json-pointers)
-  - [Support for JSON patch](#examples-json-patch)
+  - [Access using JSON Pointers](#examples-acces-json-pointers)
+  - [Support for JSON Patch](#examples-json-patch)
 - [Terms and definitions](#terms-defs)
 - [Technical Specification](#tech-spec)
   - [Header `<json>` synopsis](#header-synopsis)
@@ -59,6 +59,7 @@ It proposes a library extension.
   - [User Defined Literals](#func-user-defined-literals)
   - [Template Function Specialization `swap`](#func-swap)
   - [Template Specialization `hash`](#func-hash)
+- [Limitations and Interoperability](#limitations)
 - [Acknowledgements](#acknowledgements)
 - [References](#references)
 
@@ -73,29 +74,45 @@ as configuration data.
 The format itself is human readable and very lightweight.
 
 There are numerous libraries written in C and C++, usable by C++, but none in the standard.
+In comparison, JSON is part of the respective standard libraries of languages like Python, Swift, or D.
 
 <a name="design-goals"></a>
 ## Design Goals
+
+```
+ ____                          ___________               __________
+|    |_   parse/deserialize   |           | <---------- |  ________|__
+| JSON | -------------------> | C++ json  |  interface  | | other     |
+| text | <------------------- | container | ----------> |_| C++ types |
+|______|  stringify/serialize |___________|               |___________|
+
+```
 
 Major:
 
 - **Intuitive syntax**. In languages such as Python, JSON feels like a first class data type.
   Handling JSON in C++ should be as easy in an idiomatic way.
 
-- **Ease of use**. Library extension wich provides easy access and handling of data.
+- **Ease of use**. Library extension which provides easy access and handling of data.
   Customizable for user defined data. Value semantics. This library extension aims to
   provide a DOM (domain object model), residing in memory, like other containers.
 
-- **Arbirary Data**. Handling of JSON at runtime to be able to process arbitrary data.
+- **Arbitrary Data**. Handling of JSON at runtime to be able to process arbitrary data.
   No compile time structure definitions.
 
 - **Integration**. Playing nice with existing containers and algorithms in the standard library.
+  For the user, the interface of a JSON value should be a natural intersection of known
+  STL containers like `std::map` or `std::vector` - just like JSON supports different types like
+  key/value pairs and arrays.
+
+- **RFC7159 Conformance**. Fully conformance to the JSON specification and explicitly stating the
+  choice of possible design decisions such as limitations or behavioral details.
 
 Minor:
 
 - **Speed**. This proposal does not primarily focus on run time performance while sacrificing
   the major design goals. Unnecessary overhead should be avoided, but not at all costs.
-  This may not suit everyone everywhere, but for a presumably large audience performace is
+  This may not suit everyone everywhere, but for a presumably large audience performance is
   good enough while providing a fairly easy data structure to work with.
 
 
@@ -109,13 +126,14 @@ The extension can be implemented in C++17.
 <a name="examples"></a>
 ## Examples
 
-For the following examples, let's consider this JSON data:
+In this section, we present examples how the JSON integration into C++ looks like. For these examples,
+let us consider this JSON value:
 
 ```js
 {
     "pi": 3.141,
     "flag": true,
-    "name": "Niels Lohmann",
+    "name": "Ned Flanders",
     "nothing": null,
     "answer": {
         "everything": 42
@@ -128,44 +146,47 @@ For the following examples, let's consider this JSON data:
 }
 ```
 
+In this section, we use the terms "JSON value", "object", and "array" as described in
+Sect. [Terms and definitions](#terms-defs).
+
 <a name="examples-handling-in-cpp"></a>
 ### Handling in C++
 
-Elements can be accessed comfortably using index operators:
+The JSON value above can be constructed comfortably by using index operators:
 
 ```cpp
 json data;
 
-// floating point numbers
+// floating-point number value
 data["pi"] = 3.141;
 
-// booleans
+// boolean value
 data["flag"] = true;
 
-// strings
-data["name"] = "Niels Lohmann";
-data["name"] = std::string{"Niels Lohmann"};
+// string value
+data["name"] = "Ned Flanders";
+data["name"] = std::string{"Ned Flanders"};
 
-// null object
+// JSON's null value
 data["nothing"] = nullptr;
 
 // object inside another object
 data["answer"]["everything"] = 42;
 
-// array of objects
+// array of values
 data["list"] = { 0, 3, 6, 9, 12 };
 
 // object, defined as list of pairs
 data["object"] = {{ "currency", "USD" }, { "value", 42.99 }};
 ```
 
-or a more direct representation in C++:
+The same JSON value can be represented more directly in C++:
 
 ```cpp
 json data = {
     { "pi", 3.141 },
     { "flag", true },
-    { "name", "Niels Lohmann" },
+    { "name", "Ned Flanders" },
     { "nothing", nullptr },
     { "answer",
         { "everything", 42 }
@@ -179,7 +200,7 @@ json data = {
 ```
 
 Of course there is also support for explicit JSON value construction, in case
-the implicit does not suit the users needs. For example:
+the implicit does not suit the user's needs. For example:
 
 ```cpp
 // a way to express the empty array []
@@ -196,7 +217,8 @@ json array_not_object = { json::array({"currency", "USD"}), json::array({"value"
 
 <a name="examples-literals"></a>
 ### Literals
-Creating JSON data from a given string is straight forward:
+
+Creating JSON data from a given string is straightforward:
 
 ```cpp
 // create object from string literal
@@ -211,13 +233,13 @@ auto j2 = R"(
 )"_json;
 ```
 
-<a name="examples-parse"></a>
-### Parsing
-
 Note that without appending the `_json` suffix, the passed string literal is not parsed,
 but just used as JSON string value. That is, `json j = "{ \"happy\": true, \"pi\": 3.141 }"`
 would just store the string `"{ "happy": true, "pi": 3.141 }"` rather than parsing the
-actual JSON value.
+actual JSON text.
+
+<a name="examples-parse"></a>
+### Parsing ("Deserialization")
 
 The above example can also be expressed explicitly using `make_json(...)`:
 
@@ -227,9 +249,9 @@ auto j3 = make_json("{ \"happy\": true, \"pi\": 3.141 }");
 ```
 
 <a name="examples-stringify"></a>
-### Stringify
+### Stringify ("Serialization")
 
-You can also get a string representation (serialize):
+You can also get a string representation (i.e., serialize the JSON value to a JSON text):
 
 ```cpp
 // explicit conversion to string
@@ -255,11 +277,11 @@ This yields the output on the console:
 The JSON value as proposed plays nice with streams:
 
 ```cpp
-// deserialize from standard input
+// parse/deserialize from standard input
 json j;
 std::cin >> j;
 
-// serialize to standard output
+// stringify/serialize to standard output
 std::cout << j;
 
 // the setw manipulator is overloaded to set the indentation for pretty printing
@@ -270,12 +292,12 @@ These operators work for any subclasses of `std::istream` or `std::ostream`.
 Here is the same example with files:
 
 ```cpp
-// read a JSON file
+// read a JSON file (i.e., a file containing a JSON text)
 std::ifstream ifs("config.json");
 json j;
 ifs >> j;
 
-// write prettified JSON to another file
+// write prettified JSON text to another file
 std::ofstream ofs("pretty.json");
 ofs << std::setw(4) << j << std::endl;
 ```
@@ -301,11 +323,12 @@ json j = make_json(v);
 
 
 <a name="examples-stl-access"></a>
-### STL like access
+### STL-like access
 
 The proposed JSON value satisfies *Reversible Container* requirement.
 
 Example JSON arrays (handling like `std::vector`):
+
 ```cpp
 // create an array using push_back: ["foo", 1, true]
 json j;
@@ -342,13 +365,14 @@ j.clear();    // the array is empty again
 ```
 
 Example JSON objects (handling like `std::map`):
+
 ```cpp
-// create an object: {"foo":23, "bar":false}
+// create an object: {"foo": 23, "bar": false}
 json o;
 o["foo"] = 23;
 o["bar"] = false;
 
-// also use emplace, now: {"foo":23, "bar":false, "weather":"sunny"}
+// also use emplace; result: {"foo": 23, "bar": false, "weather": "sunny"}
 o.emplace("weather", "sunny");
 
 // find an entry
@@ -364,6 +388,11 @@ assert(o.count("fob") == 0);
 for (json::iterator it = o.begin(); it != o.end(); ++it) {
   std::cout << it.key() << " : " << it.value() << "\n";
 }
+
+// output:
+// bar : false
+// foo : 23
+// weather : sunny
 ```
 
 <a name="examples-conv-from-stl"></a>
@@ -377,8 +406,11 @@ to create a JSON array.
 The same holds for similar associative containers (`std::set`, `std::multiset`,
 `std::unordered_set`, `std::unordered_multiset`), but in these cases the order of the
 elements of the array depends how the elements are ordered in the respective STL container.
+Refer to Sect. [Limitations and Interoperability](#limitations) for details on the ordering
+of keys in objects.
 
 Examples:
+
 ```cpp
 std::vector<int> c_vector {1, 2, 3, 4};
 json j_vec(c_vector); // [1, 2, 3, 4]
@@ -412,9 +444,11 @@ Likewise, any associative key-value containers (`std::map`, `std::multimap`,
 `std::unordered_map`, `std::unordered_multimap`) whose keys can construct an `std::string` and
 whose values can be used to construct JSON types (see examples above) can be used to to create
 a JSON object. Note that in case of multimaps only one key is used in the JSON object and the
-value depends on the internal order of the STL container.
+value depends on the internal order of the STL container. Refer to
+Sect. [Limitations and Interoperability](#limitations) for details on duplicate keys in objects.
 
 Examples:
+
 ```cpp
 std::map<std::string, int> c_map {{"one", 1}, {"two", 2}, {"three", 3}};
 json j_map(c_map); // {"one": 1, "three": 3, "two": 2}
@@ -436,6 +470,7 @@ The type of the JSON object is determined automatically by the expression to sto
 Likewise, the stored value is implicitly converted.
 
 Examples:
+
 ```cpp
 // strings
 std::string s1 = "Hello, world!";
@@ -496,6 +531,7 @@ ns::person p {
 ```
 
 Through customization points, this boilerplate can be replaced to simplify the code:
+
 ```cpp
 // create a person
 ns::person p {"Ned Flanders", "744 Evergreen Terrace", 60};
@@ -514,6 +550,7 @@ assert(p == p2);
 ```
 
 This is achieved by providing conversion function for the custom type:
+
 ```cpp
 using std::experimental::json;
 
@@ -538,16 +575,16 @@ Requirements for the custom type:
 
 
 <a name="examples-acces-json-pointers"></a>
-### Access using JSON pointers
+### Access using JSON Pointers
 
 For the given example `data` the following table shows the result for various
-JSON pointers (see [RFC6901). This is an alternative to address structured values.
+JSON pointers (see [RFC6901]). This is an alternative to address structured values.
 
-    JSON Pointer            | Result
-    ----------------------- | -------
-    `"/pi"`                 | 3.414
-    `"/anwser/everything"`  | 42
-    `"/list/1"`             | 3
+| JSON Pointer            | Result |
+| ----------------------- | ------ |
+| `"/pi"`                 | 3.414  |
+| `"/anwser/everything"`  | 42     |
+| `"/list/1"`             | 3      |
 
 written in code:
 
@@ -564,7 +601,7 @@ data["/answer/everything"_json_pointer] = 42;
 
 
 <a name="examples-json-patch"></a>
-### Support for JSON patch
+### Support for JSON Patch
 
 JSON patch [RFC6902] is supported, which allows to describe differences between two
 JSON values - effectively allowing patch and diff operations known from Unix.
@@ -576,7 +613,7 @@ json j_original = R"({
   "foo": "bar"
 })"_json;
 
-// a JSON patch (RFC 6902)
+// a JSON patch (RFC6902)
 json j_patch = R"([
   { "op": "replace", "path": "/baz", "value": "boo" },
   { "op": "add", "path": "/hello", "value": ["world"] },
@@ -586,7 +623,9 @@ json j_patch = R"([
 // apply the patch
 json j_result = j_original.patch(j_patch);
 ```
+
 results in:
+
 ```
 {
    "baz": "boo",
@@ -595,14 +634,17 @@ results in:
 ```
 
 Computing the difference:
+
 ```cpp
 // calculate a JSON patch from two JSON values
 json::diff(j_result, j_original);
 ```
+
 results in:
+
 ```
 [
-  { "op":" replace", "path": "/baz", "value": ["one", "two", "three"] },
+  { "op": "replace", "path": "/baz", "value": ["one", "two", "three"] },
   { "op": "remove","path": "/hello" },
   { "op": "add", "path": "/foo", "value": "bar" }
 ]
@@ -616,6 +658,7 @@ The terminology used in this paper is intended to be consistent with terms used 
 the JSON domain [RFC7159].
 
 ### value
+
 The term *value* ([RFC7159] chapter 3) refers to an entity that represents information and can be
 one of the following:
 
@@ -626,25 +669,32 @@ one of the following:
 - boolean
 - null
 
+Objects and arrays are *structured values*, whereas strings, boolean, and null are *primitive values*.
+
 ### boolean
+
 Values for *boolean* can be
 - true
 - false
 
 ### object
-The term *object* ([RFC7159] chapter 4) refers to an structured entity, consisting of zero
-or more name/value pairs. The term *name* refers to the key that identifies an entity. This
+
+The term *object* ([RFC7159] chapter 4) refers to a structured value, consisting of zero
+or more unordered name/value pairs. The term *name* refers to the key that identifies a value. This
 is always of type *string*.
 
 ### array
-The term *array* ([RFC7159] chapter 5) refers to an structured entity, consisting of zero or
-more values of any type.
+
+The term *array* ([RFC7159] chapter 5) refers to a structured value, consisting of zero or
+more values.
 
 ### string
+
 The term *string* ([RFC7169] chapter 7) refers to a string consisting of zero
-or more unicode characters, beginning and ending with quotation marks.
+or more [Unicode] characters, beginning and ending with quotation marks.
 
 ### number
+
 The term *number* ([RFC7159] chapter 6) represents a numerical value and is one of the
 following types:
 
@@ -653,6 +703,10 @@ following types:
 - floating point
 
 Speical cases like *inf* and *NaN* are not permitted.
+
+### JSON text
+
+A *JSON text* ([RFC7159] chapter 2) is a serialized JSON value that conforms to the JSON grammar.
 
 
 <a name="tech-spec"></a>
@@ -724,14 +778,18 @@ enum class json_type : /*unspecified*/
     number_integral_signed   = /*unspecified*/ ,
     number_integral_unsigned = /*unspecified*/ ,
     number_floating_point    = /*unspecified*/ ,
-    string                   = /*unspecified*/ ,
+    object                   = /*unspecified*/ ,
     array                    = /*unspecified*/ ,
-    object                   = /*unspecified*/
+    string                   = /*unspecified*/
 };
 ```
 
 *Remarks:* The semantics of the enumerators is ascending nature. This will be
 relevant for lexicographical ordering.
+
+[TODO: Discuss order. The current order was taken from nlohmann/json and
+is null < boolean < number < object < array < string. This order is motivated
+by Python.]
 
 
 <a name="class-json_serializer"></a>
@@ -875,6 +933,8 @@ public:
 <a name="class-basic_json-construction"></a>
 #### Construction
 
+##### Default constructor
+
 ```cpp
 basic_json() noexcept;
 ```
@@ -887,6 +947,8 @@ basic_json() noexcept;
 
 *Throws:* Nothing.
 
+##### Constructor for default initialition according to value type
+
 ```cpp
 explicit basic_json(json_type) noexcept;
 ```
@@ -894,20 +956,22 @@ explicit basic_json(json_type) noexcept;
 *Effect:* Constructs an empty JSON value with the specified type. The contained data
 will be initialized, according to the following table:
 
-  Type                       | Value
-  -------------------------- | ----------
-  `json_type::null`            | -
-  `json_type::object`          | Default constructed container of type `object_type`
-  `json_type::array`           | Default constructed container of type `array_type`
-  `json_type::string`          | Default constructed string of type `string_type`
-  `json_type::boolean`         | `false`
-  `json_type::number_integer`  | `0`
-  `json_type::number_unsigned` | `0`
-  `json_type::number_float`    | `0.0`
+| Type                         | Value                                               |
+| ---------------------------- | --------------------------------------------------- |
+| `json_type::null`            | -                                                   |
+| `json_type::object`          | Default constructed container of type `object_type` |
+| `json_type::array`           | Default constructed container of type `array_type`  |
+| `json_type::string`          | Default constructed string of type `string_type`    |
+| `json_type::boolean`         | `false`                                             |
+| `json_type::number_integer`  | `0`                                                 |
+| `json_type::number_unsigned` | `0`                                                 |
+| `json_type::number_float`    | `0.0`                                               |
 
 *Throws:* Nothing.
 
 *Complexity:* Constant.
+
+##### Constructor for null value
 
 ```cpp
 basic_json(std::nullptr) noexcept;
@@ -915,9 +979,12 @@ basic_json(std::nullptr) noexcept;
 
 *Effect:* Constructs an empty JSON value of type `json_type::null`.
 
-*Remarks:* Has the same effect as the default constructor.
+*Remarks:* Has the same effect as the default constructor. The rationale for this
+constructor is to use the `nullptr` literal as a placeholder for JSON's null value.
 
 *Throws:* Nothing.
+
+#### Constructor from compatible types
 
 ```cpp
 template <typename CompatibleType, /*omitted*/ >
@@ -938,6 +1005,8 @@ is forwarded.
 *Postcondition:* If not exception was thrown, the constructed JSON value has a valid
 type, e.g. any of `json_type`.
 
+#### Construct with multiple copies of values
+
 ```cpp
 basic_json(size_type count, const basic_json & value);
 ```
@@ -954,6 +1023,8 @@ JSON value. The resulting type of the current object is `json_type::array`.
 *Throws:* `std::bad_alloc` if the container to hold the copies could not be constructed.
 
 *Complexity:* Linear in number of elements.
+
+#### Construct from an iterator range
 
 ```cpp
 template <typename InputIterator, /*SFINAE omitted*/ >
@@ -977,12 +1048,14 @@ range `[first,last)`.
 - `std::out_of_range` if the iterators originate from a primitive JSON value and do
   not meet the precondition for `first` and `last`.
 - `std::bad_alloc` if the allocation of memory for the types `json_type::object`, `json_type::array`
-  or `json_type::string` failes.
+  or `json_type::string` fails.
 
 *Complexity:*
 - For structured types (`json_type::object`, `json_type::array`): linear in number of number
   of elements in the range `[first,last)`.
 - For primitive types: constant.
+
+##### Copy constructor
 
 ```cpp
 basic_json(const basic_json &);
@@ -992,6 +1065,8 @@ basic_json(const basic_json &);
 
 *Throws:* `std::bad_alloc` if the allocation for object, array and string type failed.
 Will never be thrown if the specified JSON value is primitive.
+
+##### Move constructor
 
 ```cpp
 basic_json(basic_json &&) noexcept;
@@ -1005,13 +1080,15 @@ basic_json(basic_json &&) noexcept;
 
 *Complexity:* Constant.
 
+##### Construct from initializer list
+
 ```cpp
 basic_json(std::initializer_list<basic_json> init,
            bool automatic_type_deduction = true,
            json_type type_override = json_type::array);
 ```
 
-*Effect:* Constructs a JSON value initalized with the specified parameters.
+*Effect:* Constructs a JSON value initialized with the specified parameters.
 The type of the JSON value will be `json_type::array` or `json_type::object`, depending on the
 specified of the parameters, according to the following rules:
 
@@ -1034,9 +1111,9 @@ JSON values. The rationale is as follows:
 
 Using the parameters, it is possible to control the construction of the JSON value manually.
 The parameter `automatic_type_deduction` controls weather or not the resulting type is enforced.
-The value of the parameter `automatic_type_deduction` controls the following behaviour:
+The value of the parameter `automatic_type_deduction` controls the following behavior:
 - `true`: the constructor uses the rules above to determine the type for the JSON
-  value (`json_type::object` or `json_type::array).
+  value (`json_type::object` or `json_type::array`).
 - `false`: the constructor tries to use the type defined by `type_override`, which must be
   either `json_type::object` or `json_type::array`. If it is `json_type::object`, rule 2 must
   be valid or an exception is thrown.
@@ -1051,6 +1128,8 @@ The value of the parameter `automatic_type_deduction` controls the following beh
 *Complexity:* The same complexity to create the underlying data structure defined
 by `array_type` or `object_type`, and linear time in size of the initializer list.
 
+##### Factory to create JSON array from initializer list
+
 ```cpp
 static basic_json array(std::initializer_list<basic_json> = std::initializer_list<basic_json>{});
 ```
@@ -1064,6 +1143,8 @@ containing pairs.
 
 *Complexity:* The same complexity to create the underlying data structure defined by `array_type`
 and linear time in size of the initializer list.
+
+##### Factory to create JSON object from initializer list
 
 ```cpp
 static basic_json object(std::initializer_list<basic_json> = std::initializer_list<basic_json>{});
@@ -1099,6 +1180,8 @@ and linear time in size of the initializer list.
 <a name="class-basic_json-modifying-operators"></a>
 #### Modifying Operators
 
+##### Copy assignment
+
 ```cpp
 basic_json & operator=(const basic_json &) noexcept( /*omitted*/ );
 ```
@@ -1106,6 +1189,8 @@ basic_json & operator=(const basic_json &) noexcept( /*omitted*/ );
 *Effect:* Copy assignment operator.
 
 *Complexity:* Linear.
+
+##### Move assignment
 
 ```cpp
 basic_json & operator=(basic_json &&) noexcept( /*omitted*/ );
@@ -1119,6 +1204,8 @@ basic_json & operator=(basic_json &&) noexcept( /*omitted*/ );
 <a name="class-basic_json-non-modifying-operators"></a>
 #### Non-Modifying Operators
 
+##### Comparison: equality
+
 ```cpp
 friend bool operator==(const_reference lhs, const_reference rhs) noexcept;
 ```
@@ -1130,7 +1217,7 @@ friend bool operator==(const_reference lhs, const_reference rhs) noexcept;
 - Floating-point numbers are automatically converted before
   comparison. Floating-point numbers are compared indirectly: two
   floating-point numbers `f1` and `f2` are considered equal if neither
-  `f1 > f2` nor `f2 > f1` holds.
+  `f1 > f2` nor `f2 > f1` holds. [TODO]
 - Two JSON null values are equal.
 - The types `object_type` and `array_type` must provide their own
   comparison `operator==` which will be used to compare stored values.
@@ -1139,16 +1226,18 @@ friend bool operator==(const_reference lhs, const_reference rhs) noexcept;
 
 *Complexity:* Type dependent:
 
-  Value type                   | Complexity
-  ---------------------------- | ----------
-  `json_type::null`            | constant
-  `json_type::object`          | depending on comparison of equality of `object_type`
-  `json_type::array`           | depending on comparison of equality of `array_type`
-  `json_type::string`          | depending on comparison of equality of `string_type`
-  `json_type::boolean`         | constant
-  `json_type::number_integer`  | constant
-  `json_type::number_unsigned` | constant
-  `json_type::number_float`    | constant
+| Value type                   | Complexity                                           |
+| ---------------------------- | ---------------------------------------------------- |
+| `json_type::null`            | constant                                             |
+| `json_type::object`          | depending on comparison of equality of `object_type` |
+| `json_type::array`           | depending on comparison of equality of `array_type`  |
+| `json_type::string`          | depending on comparison of equality of `string_type` |
+| `json_type::boolean`         | constant                                             |
+| `json_type::number_integer`  | constant                                             |
+| `json_type::number_unsigned` | constant                                             |
+| `json_type::number_float`    | constant                                             |
+
+##### Comparison: inequality
 
 ```cpp
 friend bool operator!=(const_reference lhs, const_reference rhs) noexcept;
@@ -1161,6 +1250,8 @@ of `not (lhs == rhs)`.
 
 *Complexity:* Equal to `operator==(const_reference)`.
 
+##### Comparison: lexicographical
+
 ```cpp
 friend bool operator< (const_reference lhs, const_reference rhs) noexcept;  // (1)
 friend bool operator<=(const_reference lhs, const_reference rhs) noexcept;  // (2)
@@ -1171,7 +1262,8 @@ friend bool operator>=(const_reference lhs, const_reference rhs) noexcept;  // (
 *Effect:* Lexicographical comparison for *less* (1), *less or equal* (2), *greater* (3)
 and *greater or equal* (4). The following rules apply:
 
-1. First comparison of `type()`: the types are in ascending order as specified by `json_type`.
+1. First comparison of `type()`: the types are in ascending order as specified by `json_type`
+   (null < boolean < number < object < array < string).
    If both, `lhs` and `rhs` are of type `json_type::null`, the result is always `false`.
 2. Second comparison if `type()` of `lhs` and `rhs` is the same: lexicographical comparison
    of the contained data type.
@@ -1180,17 +1272,18 @@ and *greater or equal* (4). The following rules apply:
 
 *Complexity:* Type dependent:
 
-  Value type                   | Complexity
-  ---------------------------- | ----------
-  `json_type::null`            | constant
-  `json_type::object`          | depending on lexicographical comparison `object_type`
-  `json_type::array`           | depending on lexicographical comparison `array_type`
-  `json_type::string`          | depending on lexicographical comparison `string_type`
-  `json_type::boolean`         | constant
-  `json_type::number_integer`  | constant
-  `json_type::number_unsigned` | constant
-  `json_type::number_float`    | constant
+| Value type                   | Complexity                                            |
+| ---------------------------- | ----------------------------------------------------- |
+| `json_type::null`            | constant                                              |
+| `json_type::object`          | depending on lexicographical comparison `object_type` |
+| `json_type::array`           | depending on lexicographical comparison `array_type`  |
+| `json_type::string`          | depending on lexicographical comparison `string_type` |
+| `json_type::boolean`         | constant                                              |
+| `json_type::number_integer`  | constant                                              |
+| `json_type::number_unsigned` | constant                                              |
+| `json_type::number_float`    | constant                                              |
 
+##### Comparison with scalar types: equality
 
 ```cpp
 template <typename ScalarType, /*SFINAE omitted*/ >
@@ -1203,7 +1296,9 @@ friend bool operator==(const Scalartype, const_reference) noexcept;
 *Effect:* Compare scalar types to the JSON value by converting the scalar
 value into a JSON value, followed by a comparison of equality.
 
-*Remarks:* Same properties as `bool operator==(const_reference) noexcept;`
+*Remarks:* Same properties as `bool operator==(const_reference, const_reference) noexcept;`
+
+##### Comparison with scalar types: inequality
 
 ```cpp
 template <typename ScalarType, /*SFINAE omitted*/ >
@@ -1222,6 +1317,8 @@ value into a JSON value, followed by a comparison of inequality.
 <a name="class-basic_json-query-member-functions"></a>
 #### Query Member Functions
 
+##### Query JSON value type
+
 ```cpp
 constexpr json_type type() const noexcept;
 ```
@@ -1232,6 +1329,8 @@ constexpr json_type type() const noexcept;
 
 *Complexity:* Constant.
 
+##### Query JSON value type (implicit)
+
 ```cpp
 constexpr operator json_type () const noexcept;
 ```
@@ -1241,6 +1340,8 @@ constexpr operator json_type () const noexcept;
 *Throws:* Nothing.
 
 *Complexity:* Constant.
+
+##### Check: is JSON value of primitive type?
 
 ```cpp
 constexpr bool is_primitive() const noexcept;
@@ -1260,6 +1361,8 @@ If not one of those types, it returns `false`.
 
 *Complexity:* Constant.
 
+##### Check: is JSON value of structured type?
+
 ```cpp
 constexpr bool is_structured() const noexcept;
 ```
@@ -1273,6 +1376,8 @@ If not one of those types, it returns `false`.
 *Throws:* Nothing.
 
 *Complexity:* Constant.
+
+##### Check: is JSON value a number?
 
 ```cpp
 constexpr bool is_number() const noexcept;
@@ -1288,6 +1393,8 @@ If not one of those types, it returns `false`.
 *Throws:* Nothing.
 
 *Complexity:* Constant.
+
+##### Check: is JSON value of given type?
 
 ```cpp
 constexpr bool is_null()              const noexcept;
@@ -1306,6 +1413,8 @@ constexpr bool is_array()             const noexcept;
 
 *Complexity:* Constant.
 
+##### Check: Is a value stored?
+
 ```cpp
 bool empty() const noexcept;
 ```
@@ -1313,20 +1422,20 @@ bool empty() const noexcept;
 *Effect:* Returns `true` if a JSON value has no elements, `false` otherwise.
 The return value depends on the different types and is defined as follows:
 
-  Value type                           | return value
-  ------------------------------------ | -------------
-  `json_type::null`                      | `true`
-  `json_type::boolean`                   | `false`
-  `json_type::string`                    | `false`
-  `json_type::number_integral_signed`    | `false`
-  `json_type::number_integral_unsigned`  | `false`
-  `json_type::number_floating_point`     | `false`
-  `json_type::object`                    | result of function `object_type::empty()`
-  `json_type::array`                     | result of function `array_type::empty()`
+| Value type                            | return value                              |
+| ------------------------------------- | ----------------------------------------- |
+| `json_type::null`                     | `true`                                    |
+| `json_type::boolean`                  | `false`                                   |
+| `json_type::string`                   | `false`                                   |
+| `json_type::number_integral_signed`   | `false`                                   |
+| `json_type::number_integral_unsigned` | `false`                                   |
+| `json_type::number_floating_point`    | `false`                                   |
+| `json_type::object`                   | result of function `object_type::empty()` |
+| `json_type::array`                    | result of function `array_type::empty()`  |
 
 *Remarks:* This function does not return whether a string stored as JSON value
-is empty - it returns whether the JSON container itself is empty which is
-`false` in the case of a string.
+is empty -- it returns whether the JSON container itself is empty which is
+`false` in the case of a string. Note that the null value is always empty.
 
 *Remarks:* This function helps `basic_json` satisfying the [Container](http://en.cppreference.com/w/cpp/concept/Container)
 requirements:
@@ -1338,26 +1447,29 @@ requirements:
 *Complexity:* Constant, as long as `array_type` and `object_type` satisfy the Container concept;
 that is, their `empty()` functions have constant complexity.
 
+##### Query the number of stored values
 
 ```cpp
 size_type size() const noexcept;
 ```
+
 *Effect:* Returns the number of elements in a JSON value.
 The return value depends on the different types and is defined as follows:
 
-  Value type                           | return value
-  ------------------------------------ | -------------
-  `json_type::null`                      | `0`
-  `json_type::boolean`                   | `1`
-  `json_type::string`                    | `1`
-  `json_type::number_integral_signed`    | `1`
-  `json_type::number_integral_unsigned`  | `1`
-  `json_type::number_floating_point`     | `1`
-  `json_type::object`                    | result of function `object_type::size()`
-  `json_type::array`                     | result of function `array_type::size()`
+| Value type                            | return value                             |
+| ------------------------------------- | ---------------------------------------- |
+| `json_type::null`                     | `0`                                      |
+| `json_type::boolean`                  | `1`                                      |
+| `json_type::string`                   | `1`                                      |
+| `json_type::number_integral_signed`   | `1`                                      |
+| `json_type::number_integral_unsigned` | `1`                                      |
+| `json_type::number_floating_point`    | `1`                                      |
+| `json_type::object`                   | result of function `object_type::size()` |
+| `json_type::array`                    | result of function `array_type::size()`  |
 
 *Remarks:* This function does not return the length of a string stored as JSON
 value - it returns the number of elements in the JSON value which is `1` in the case of a string.
+Note the null value always has a size of `0`.
 
 *Remarks:* This function helps `basic_json` satisfying the [Container](http://en.cppreference.com/w/cpp/concept/Container)
 requirements:
@@ -1369,25 +1481,27 @@ requirements:
 *Complexity:* Constant, as long as `array_type` and `object_type` satisfy the Container concept;
 that is, their size() functions have constant complexity.
 
+##### Query the maximal number of storable values
 
 ```cpp
 size_type max_size() const noexcept;
 ```
 
 *Effect:* Returns the maximum number of elements a JSON value is able to hold due to
-system or library implementation limitations.
+system or library implementation limitations. See [Limitations and Interoperability](#limitations)
+for more information.
 The return value depends on the different types and is defined as follows:
 
-  Value type                           | return value
-  ------------------------------------ | -------------
-  `json_type::null`                      | `0` (same as `size()`)
-  `json_type::boolean`                   | `1` (same as `size()`)
-  `json_type::string`                    | `1` (same as `size()`)
-  `json_type::number_integral_signed`    | `1` (same as `size()`)
-  `json_type::number_integral_unsigned`  | `1` (same as `size()`)
-  `json_type::number_floating_point`     | `1` (same as `size()`)
-  `json_type::object`                    | result of function `object_type::max_size()`
-  `json_type::array`                     | result of function `array_type::max_size()`
+| Value type                            | return value                                 |
+| ------------------------------------- | -------------------------------------------- |
+| `json_type::null`                     | `0` (same as `size()`)                       |
+| `json_type::boolean`                  | `1` (same as `size()`)                       |
+| `json_type::string`                   | `1` (same as `size()`)                       |
+| `json_type::number_integral_signed`   | `1` (same as `size()`)                       |
+| `json_type::number_integral_unsigned` | `1` (same as `size()`)                       |
+| `json_type::number_floating_point`    | `1` (same as `size()`)                       |
+| `json_type::object`                   | result of function `object_type::max_size()` |
+| `json_type::array`                    | result of function `array_type::max_size()`  |
 
 *Remarks:* This function helps `basic_json` satisfying the [Container](http://en.cppreference.com/w/cpp/concept/Container)
 requirements:
@@ -1398,6 +1512,8 @@ requirements:
 
 *Complexity:* Constant, as long as `array_type` and `object_type` satisfy the Container concept;
 that is, their `max_size()` functions have constant complexity.
+
+##### Count occurrences of key in object
 
 ```cpp
 size_type count(typename object_type::key_type key) const;
@@ -1414,6 +1530,8 @@ always be `0` (`key` was not found) or `1` (`key` was found).
 
 *Complexity:* Depends on the underlying type of `object_type` for lookups.
 `basic_json` adds constant complexity.
+
+##### Find element in object
 
 ```cpp
 iterator       find(typename object_type::key_type key);
@@ -1436,6 +1554,8 @@ that is not of type `json_type::object`.
 
 <a name="class-basic_json-element-access"></a>
 #### Element Access
+
+##### Array element access by index (no bound checking)
 
 ```cpp
 const_reference operator[](size_type) const;
@@ -1461,9 +1581,9 @@ it was of type `json_type::null`.
 *Remarks:*
 - No synchronization.
 - const overload: No index checks are being performed. Access to indices other than `0..size()-1`
-  are undefined behaviour.
+  are undefined behavior.
 
-*Throws:* `std::domain_error` if the type of the JSON value is diffrent than `json_type::array`
+*Throws:* `std::domain_error` if the type of the JSON value is different than `json_type::array`
 or `json_type::null`.
 
 *Complexity:*
@@ -1473,6 +1593,8 @@ defined by `array_type`. Constant overhead by `basic_json`.
 complexity as the const overload. If not, it is the same complexity as for the underlying
 data structure defined by `array_type` to create a container of sufficient size.
 Constant overhead by `basic_json`.
+
+##### Object element access by key (no bound checking)
 
 ```cpp
 const_reference operator[](const typename object_type::key_type &) const;
@@ -1495,11 +1617,11 @@ it was of type `json_type::null`.
 *Remarks:*
 - No synchronization.
 - const overload: No checks are being performed. Specifying a non-existent key is undefined
-  behaviour.
+  behavior.
 
 *Throws:*
-- const overlaod: `std::domain_error` if the type of the JSON value is diffrent than `json_type::object`.
-- non-const overload:  `std::domain_error` if the type of the JSON value is diffrent than
+- const overload: `std::domain_error` if the type of the JSON value is different than `json_type::object`.
+- non-const overload:  `std::domain_error` if the type of the JSON value is different than
   `json_type::object` or `json_type::null`.
 
 *Complexity:*
@@ -1509,6 +1631,8 @@ it was of type `json_type::null`.
   If not, it is the same complexity as for the underlying data structure defined by `object_type` to
   create a container and the element for the corresponding key. Constant overhead by `basic_json`.
 
+##### Object element access by key (no bound checking); string literal overloads
+
 ```cpp
 template <typename T> const_reference operator[](T *) const;
 template <typename T>       reference operator[](T *);
@@ -1517,7 +1641,7 @@ template <typename T, std::size_t N> const_reference operator[](T * (&key)[N]) c
 template <typename T, std::size_t N>       reference operator[](T * (&key)[N]);
 ```
 
-**TODO**
+##### Object element access by JSON pointer (no bound checking)
 
 ```cpp
 const_reference operator[](const json_pointer &) const;
@@ -1565,6 +1689,8 @@ The non-const overload will insert the requested JSON value, in particular:
   or `array_type` to create a container and the element for the corresponding key or index.
   Constant for primitive types. Constant overhead by `basic_json`.
 
+##### Array element access by index (with bound checking)
+
 ```cpp
 const_reference at(size_type) const;
       reference at(size_type);
@@ -1586,6 +1712,8 @@ type `json_type::array`.
 
 *Complexity:* The same as for a random access of the underlying data structure defined
 by `array_type`. Constant overhead by `basic_json`.
+
+##### Object element access by key (with bound checking)
 
 ```cpp
 const_reference at(const typename object_type::key_type &) const;
@@ -1609,6 +1737,8 @@ type `json_type::object`.
 *Complexity:* The same as for finding an element with a specified key of the underlying data
 structure defined by `object_type`. Constant overhead by `basic_json`.
 
+##### Object element access by JSON pointer (with bound checking)
+
 ```cpp
 const_reference at(const json_pointer &) const;
       reference at(const json_pointer &);
@@ -1631,6 +1761,8 @@ Overloads for const and non-const versions.
 defined by `object_type` or `array_type`, constant for primitive types.
 Constant overhead by `basic_json`.
 
+##### Object element access by key with default value
+
 ```cpp
 template <class ValueType, /*SFINAE omitted*/ >
 ValueType value(const typename object_type::key_type &, ValueType default_value) const;
@@ -1650,7 +1782,7 @@ The JSON value to be found must be convertible into `ValueType`.
 
 There is an overload specialized for `const char *` returning a `string_type`.
 
-There is also an overload pair which takes a JSON path instead of an object key. If the
+There is also an overload pair which takes a JSON pointer instead of an object key. If the
 JSON pointer can not be resolved, the default value is returned.
 
 *Remarks:* No synchronization.
@@ -1658,12 +1790,14 @@ JSON pointer can not be resolved, the default value is returned.
 *Throws:* `std::domain_error` if the JSON value which the member function is called upon is not
   of type `json_type::object`.
 
-*Complexity:* The same complexity af for the underlying data structure defined by `object_type`
+*Complexity:* The same complexity of for the underlying data structure defined by `object_type`
 to find an element. Constant overhead by `basic_json`.
 
 
 <a name="class-basic_json-container-access"></a>
 #### Container Access
+
+##### Iterator to the first element
 
 ```cpp
 const_iterator begin()  const noexcept;
@@ -1676,6 +1810,8 @@ const_iterator cbegin() const noexcept;
 *Throws:* Nothing.
 
 *Complexity:* Constant.
+
+##### Iterator past the last element
 
 ```cpp
 const_iterator end()  const noexcept;
@@ -1690,6 +1826,8 @@ non-const versions.
 
 *Complexity:* Constant.
 
+##### Iterator to the first element of the reversed container
+
 ```cpp
 reverse_const_iterator rbegin() const noexcept;
 reverse_iterator       rbegin()       noexcept;
@@ -1701,6 +1839,8 @@ reverse_iterator       rbegin()       noexcept;
 
 *Complexity:* Constant.
 
+##### Iterator past the last element of the reversed container
+
 ```cpp
 reverse_const_iterator rend() const noexcept;
 reverse_iterator       rend()       noexcept;
@@ -1711,6 +1851,8 @@ reverse_iterator       rend()       noexcept;
 *Throws:* Nothing.
 
 *Complexity:* Constant.
+
+##### Return first element
 
 ```cpp
 const_reference front() const noexcept;
@@ -1727,7 +1869,7 @@ const and non-const references. Depending on the type of the JSON value:
 of `json_type::null`.
 
 *Remarks:* Calling this function on a structured JSON value (types `json_type::object` and
-`json_type::array`) with empty underlying containers, the behaviour is *undefined*.
+`json_type::array`) with empty underlying containers, the behavior is *undefined*.
 
 *Complexity:*
 - For primitive JSON value types (except type `json_type::null`): Constant.
@@ -1735,6 +1877,10 @@ of `json_type::null`.
   the underlying container defined by `object_type`.
 - For JSON value of type `json_type::array`, the complexity to access the first element of
   the underlying container defined by `array_type`.
+
+[TODO: Discuss. For a Container, end() has constant complexity, so back() should be constant, too.]
+
+##### Return last element
 
 ```cpp
 const_reference back() const noexcept;
@@ -1745,13 +1891,13 @@ const_reference back() const noexcept;
 const and non-const references. Depending on the type of the JSON value:
 - `json_type::object` and `json_type::array`: the function returns a reference to the last
   element in the underlying container.
-- primitive type (except `json_type::null`): the function returns a referene to the value.
+- primitive type (except `json_type::null`): the function returns a reference to the value.
 
-*Throws:* `std::domain_error` if the function was called on a JSON vaule with a type
+*Throws:* `std::domain_error` if the function was called on a JSON value with a type
 of `json_type::null`.
 
 *Remarks:* Calling this function on a structured JSON value (types `json_type::object` and
-`json_type::array`) with empty underlying containers, the behaviour is *undefined*.
+`json_type::array`) with empty underlying containers, the behavior is *undefined*.
 
 *Complexity:*
 - For primitive JSON value types (except type `json_type::null`): Constant.
@@ -1760,12 +1906,16 @@ of `json_type::null`.
 - For JSON value of type `json_type::array`, the complexity to access the last element of
   the underlying container defined by `array_type`.
 
+[TODO: Discuss. For a Container, end() has constant complexity, so back() should be constant, too.]
+
 
 <a name="class-basic_json-container-operations"></a>
 #### Container Operations
 
+##### Remove all elements
+
 ```cpp
-void clear() noexcept; // clears container
+void clear() noexcept;
 ```
 
 *Requires:* Nothing.
@@ -1781,6 +1931,11 @@ with `basic_json(std::nullptr)` or the default constructor.
 
 *Throws:* Nothing.
 
+[TODO: Discuss. In nlohmann/json, `clear()` "resets" the JSON value with semantics like `basic_json(type())`.
+That is, strings are set to `""`, numbers to `0`, objects to `{}`, and arrays to `[]`.]
+
+##### Swap content of two JSON values
+
 ```cpp
 void swap(reference) noexcept;
 ```
@@ -1795,7 +1950,9 @@ All iterators and references remain valid. The past-the-end iterator is invalida
 
 *Throws:* Nothing.
 
-*Comlexity:* Constant.
+*Complexity:* Constant.
+
+##### Swap content of array in JSON value
 
 ```cpp
 void swap(array_type &);
@@ -1810,7 +1967,9 @@ All iterators and references remain valid. The past-the-end iterator is invalida
 *Throws:* `std::domain_error` if JSON value is not of type `json_type::array`.
 Example: `"cannot use swap() with string"`.
 
-*Comlexity:* Constant.
+*Complexity:* Constant.
+
+##### Swap content of object in JSON value
 
 ```cpp
 void swap(object_type &);
@@ -1825,7 +1984,9 @@ All iterators and references remain valid. The past-the-end iterator is invalida
 *Throws:* `std::domain_error` if JSON value is not of type `json_type::object`.
 Example: `"cannot use swap() with string"`.
 
-*Comlexity:* Constant.
+*Complexity:* Constant.
+
+##### Swap content of string in JSON value
 
 ```cpp
 void swap(string_type &);
@@ -1840,7 +2001,7 @@ All iterators and references remain valid. The past-the-end iterator is invalida
 *Throws:* `std::domain_error` when JSON value is not of type `json_type::string`
 Example: `"cannot use swap() with boolean"`.
 
-*Comlexity:* Constant.
+*Complexity:* Constant.
 
 ```cpp
 void push_back(basic_json &&);
@@ -1872,10 +2033,13 @@ arrays, which is defined by the template parameter `array_type`. The operation
 void push_back(std::initializer_list<basic_json>);
 ```
 
-*Effect:* This function allows to use `push_back` with an initializer list. In case
+*Effect:* This function allows to use `push_back` with an initializer list.
+
+In case
   1. the current JSON value is of type `json_type::object`, and
   2. the initializer list contains only two elements, and
   3. the first element of the initializer list is a string,
+
 the initializer list is converted into an object element (JSON value of type `json_type::object`)
 and added using `void push_back(const typename object_type::value_type&)`. Otherwise,
 the initializer list is converted to a JSON value and added using `void push_back(basic_json&&)`.
@@ -1911,7 +2075,8 @@ reference operator+=(std::initializer_list<basic_json>);
 added JSON value as reference.
 
 ```cpp
-template<class... Args> reference emplace_back(Args && ...);
+template<class... Args>
+reference emplace_back(Args && ...);
 ```
 
 *Effect:* Appends a new JSON value from the passed parameters to the JSON value.
@@ -1919,7 +2084,7 @@ If the function is called on a JSON value of type `json_type::null`, an empty
 JSON value of type `json_type::array` is created before appending the newly created
 value from the arguments. A reference to the newly created object is returned.
 
-*Requires:* A `basic_json` object must be construtible from the template argument types.
+*Requires:* A `basic_json` object must be constructible from the template argument types.
 
 *Throws:* `std::domain_error` when called on a JSON value of type other than
 `json_type::array` or `json_type::null`.
@@ -1930,7 +2095,8 @@ value from the arguments. A reference to the newly created object is returned.
 the underlying data structure, which is defined by the template parameter `array_type`.
 
 ```cpp
-template<class... Args> std::pair<iterator, bool> emplace(Args && ...);
+template<class... Args>
+std::pair<iterator, bool> emplace(Args && ...);
 ```
 
 *Effect:* Inserts a new JSON value into a JSON value of type `json_type::object`,
@@ -1946,9 +2112,9 @@ The function returns a pair, containing:
   - *first:* an iterator to the inserted JSON value or the already existing JSON value if
     no insertion happened because of an existing key. If the insertion failed, the result
     of `end()` will be returned.
-  - *second:* a `bool` denoting wheather the insertion took place.
+  - *second:* a `bool` denoting whether the insertion took place.
 
-*Requires:* A `basic_json` object must be construtible from the template argument types.
+*Requires:* A `basic_json` object must be constructible from the template argument types.
 
 *Throws:* `std::domain_error` when called on a JSON value of type other than
 `json_type::object` or `json_type::null`.
@@ -2095,7 +2261,8 @@ from a JSON value of type `json_type::array`.
 the underlying data structure.
 
 ```cpp
-template<class IteratorType, /*SFINAE omitted*/ > IteratorType erase(IteratorType pos);
+template<class IteratorType, /*SFINAE omitted*/ >
+IteratorType erase(IteratorType pos);
 ```
 
 *Effects:* Erases the element from the JSON value at the position specified by the iterator.
@@ -2129,10 +2296,11 @@ Depending on the type of the JSON value:
 - others: Constant.
 
 ```cpp
-template<class IteratorType, /*SFINAE omitted*/ > IteratorType erase(IteratorType first, IteratorType last);
+template<class IteratorType, /*SFINAE omitted*/ >
+IteratorType erase(IteratorType first, IteratorType last);
 ```
 
-*Effect:* Erases all elments from the JSON value specified by the range `[first, last)`.
+*Effect:* Erases all elements from the JSON value specified by the range `[first, last)`.
 The function returns an iterator pointing to the element after the last erased. Erasing an
 empty range is a no-op. Depending on the type of the JSON value:
 - `json_type::object` / `json_type::array`: The elements in the specified range are
@@ -2213,7 +2381,7 @@ public:
 };
 ```
 
-Exceprt from [RFC6901] / Section 3, the ABNF of the JSON pointer syntax:
+Excerpt from [RFC6901] / Section 3, the ABNF of the JSON pointer syntax:
 
 ```
 json-pointer    = *( "/" reference-token )
@@ -2230,7 +2398,7 @@ escaped         = "~" ( "0" / "1" )                 ; representing '~' and '/', 
 json_pointer();
 ```
 
-*Effect:* Default constructor. Points to the whole JSON document.
+*Effect:* Default constructor. Same behavior as the empty JSON pointer: Points to the whole JSON document.
 
 *Complexity:* Constant.
 
@@ -2311,17 +2479,17 @@ void to_json(BasicJsonType &, const CompatibleObjectType &);                    
 *Precondition:* Specified value types must be convertible to a JSON value. Depending on the
 overload, the specified value must implicitly convertible, according to the following table:
 
-Overload | Implicitly convertible into             | Resulting JSON value type
--------- | --------------------------------------- | -----------------------------------
-(1)      | `BasicJsonType::boolean_type`           | `json_type::boolean`
-         | `BasicJsonType::integral_signed_type`   | `json_type::number_integral_signed`
-         | `BasicJsonType::integral_unsigned_type` | `json_type::number_integral_unsigned`
-         | `BasicJsonType::floating_point_type`    | `json_type::number_floating_point`
-         |                                         | `json_type::null`
-(2)      | `BasicJsonType::integral_signed_type`   | `json_type::number_integral_signed`
-(3)      | `BasicJsonType::string_type`            | `json_type::string`
-(4)      | `BasicJsonType::array_type`             | `json_type::array`
-(5)      | `BasicJsonType::object_type`            | `json_type::object`
+| Overload | Implicitly convertible into             | Resulting JSON value type
+| -------- | --------------------------------------- | ------------------------------------- |
+| (1)      | `BasicJsonType::boolean_type`           | `json_type::boolean`                  |
+|          | `BasicJsonType::integral_signed_type`   | `json_type::number_integral_signed`   |
+|          | `BasicJsonType::integral_unsigned_type` | `json_type::number_integral_unsigned` |
+|          | `BasicJsonType::floating_point_type`    | `json_type::number_floating_point`    |
+|          |                                         | `json_type::null`                     |
+| (2)      | `BasicJsonType::integral_signed_type`   | `json_type::number_integral_signed`   |
+| (3)      | `BasicJsonType::string_type`            | `json_type::string`                   |
+| (4)      | `BasicJsonType::array_type`             | `json_type::array`                    |
+| (5)      | `BasicJsonType::object_type`            | `json_type::object`                   |
 
 *Postcondition:*
 - The output parameter of type `BasicJsonType` is a valid JSON value of appropriate
@@ -2442,7 +2610,7 @@ basic_json<Policy> make_json(const Container & c);
 json operator "" _json(const char *, std::size_t);
 ```
 
-*Effect:* Constructs a JSON value (with all neccesary subnodes) from the specified string.
+*Effect:* Constructs a JSON value (with all necessary sub-nodes) from the specified string.
 
 *Remarks:*
 - Only complete and syntactically correct JSON data representation will result in success,
@@ -2487,6 +2655,38 @@ template <> struct hash<json_v1::json>
 *Effect:* The template specialization to calculate the hash value for the specified
 JSON value.
 
+<a name="limitations"></a>
+## Limitations and Interoperability
+
+### Limitations
+
+Section 9 of RFC7159 allows a conforming implementation to:
+
+- set limits on the size of texts that it accepts
+- set limits on the maximum depth of nesting
+- set limits on the range and precision of numbers
+- set limits on the length and character contents of strings
+
+## Interoperability
+
+Section 4 of RFC7159 states that keys in an object SHOULD be unique and
+
+> Implementations whose behavior does not depend on member
+  ordering will be interoperable in the sense that they will not be
+  affected by these differences.
+
+Sect. 6 of RFC7159:
+
+> Note that when such software is used, numbers that are integers and
+  are in the range [-(2**53)+1, (2**53)-1] are interoperable in the
+  sense that implementations will agree exactly on their numeric
+  values.
+
+Section 8.1 of RFC7159:
+
+> JSON texts that are encoded in UTF-8 are interoperable in the sense
+  that they will be read successfully by the maximum number of
+  implementations
 
 <a name="acknowledgements"></a>
 ## Acknowledgements
@@ -2505,3 +2705,4 @@ JSON value.
 
 - [nlohmann-json]	Example Implementation, <https://github.com/nlohmann/json>
 
+- [Unicode] The Unicode Consortium, "The Unicode Standard", <http://www.unicode.org/versions/latest/>
