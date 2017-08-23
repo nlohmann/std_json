@@ -787,10 +787,6 @@ enum class json_type : /*unspecified*/
 *Remarks:* The semantics of the enumerators is ascending nature. This will be
 relevant for lexicographical ordering.
 
-[TODO: Discuss order. The current order was taken from nlohmann/json and
-is null < boolean < number < object < array < string. This order is motivated
-by Python.]
-
 
 <a name="class-json_serializer"></a>
 ### Class Template `json_serializer`
@@ -1878,7 +1874,6 @@ of `json_type::null`.
 - For JSON value of type `json_type::array`, the complexity to access the first element of
   the underlying container defined by `array_type`.
 
-[TODO: Discuss. For a Container, end() has constant complexity, so back() should be constant, too.]
 
 ##### Return last element
 
@@ -1906,13 +1901,11 @@ of `json_type::null`.
 - For JSON value of type `json_type::array`, the complexity to access the last element of
   the underlying container defined by `array_type`.
 
-[TODO: Discuss. For a Container, end() has constant complexity, so back() should be constant, too.]
-
 
 <a name="class-basic_json-container-operations"></a>
 #### Container Operations
 
-##### Remove all elements
+##### Clears the content
 
 ```cpp
 void clear() noexcept;
@@ -1922,17 +1915,23 @@ void clear() noexcept;
 
 *Effect:* Clears the JSON value.
 
-*Postcondition:* The contained value is destructed if necessary. All sub-values (in case
-of types `json_type::object` and `json_type::array`) are destructed. The JSON value is of
-type `json_type::null`. The JSON value is in the same state as if constructed
-with `basic_json(std::nullptr)` or the default constructor.
+*Postcondition:* Clears the content of a JSON value and resets it to the default value as
+if `basic_json(type())` had been called:
+
+| Type                         | Value after `clear()` |
+| ---------------------------- | --------------------- |
+| `json_type::null`            | `null`                |
+| `json_type::object`          | `{}`                  |
+| `json_type::array`           | `[]`                  |
+| `json_type::string`          | `""`                  |
+| `json_type::boolean`         | `false`               |
+| `json_type::number_integer`  | `0`                   |
+| `json_type::number_unsigned` | `0`                   |
+| `json_type::number_float`    | `0.0`                 |
 
 *Remarks:* No synchronization.
 
 *Throws:* Nothing.
-
-[TODO: Discuss. In nlohmann/json, `clear()` "resets" the JSON value with semantics like `basic_json(type())`.
-That is, strings are set to `""`, numbers to `0`, objects to `{}`, and arrays to `[]`.]
 
 ##### Swap content of two JSON values
 
