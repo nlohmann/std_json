@@ -1,6 +1,6 @@
 | Document Number | P0760R0                                   |
 |-----------------|-------------------------------------------|
-| Date            | 2017-08-22                                |
+| Date            | 2017-08-23                                |
 | Project         | Programming Language C++, Library Evolution Working Group |
 | Reply-to        | Niels Lohmann <<mail@nlohmann.me>><br>Mario Konrad <<mario.konrad@gmx.net>> |
 
@@ -2003,11 +2003,15 @@ Example: `"cannot use swap() with boolean"`.
 
 *Complexity:* Constant.
 
+##### Add element to array
+
 ```cpp
 void push_back(basic_json &&);
 void push_back(const basic_json &);
 void push_back(const typename object_type::value_type &);
 ```
+
+[TODO: Discuss. The third overload uses `object_type::value_type` which seems strange in the context of adding to an array.]
 
 *Requires:* The JSON value which the data is appended to must be of type
 `json_type::array` or `json_type::null`.
@@ -2028,6 +2032,8 @@ it was appended to.
 *Complexity:* The operation relies on its underlying type for handling
 arrays, which is defined by the template parameter `array_type`. The operation
 `basic_json::push_back` does not introduce a higher complexity than amortized *O(1)*.
+
+##### Add elements to object or array
 
 ```cpp
 void push_back(std::initializer_list<basic_json>);
@@ -2056,6 +2062,8 @@ the initializer list is converted to a JSON value and added using `void push_bac
 because pairs like `{"key", "value"}` can be both interpreted as `object_type::value_type`
 or `std::initializer_list<basic_json>`.
 
+##### Add element to array
+
 ```cpp
 reference operator+=(basic_json &&);
 reference operator+=(const basic_json &);
@@ -2066,6 +2074,8 @@ reference operator+=(const typename object_type::value_type &);
 `void push_back(basic_json &&);`. Except, it returns the added JSON value
 as reference.
 
+##### Add elements to object or array
+
 ```cpp
 reference operator+=(std::initializer_list<basic_json>);
 ```
@@ -2073,6 +2083,8 @@ reference operator+=(std::initializer_list<basic_json>);
 *Remarks:* The same requirements, effects, exceptions and complexity as
 `void push_back(std::initializer_list<basic_json>);`. Except, it returns the
 added JSON value as reference.
+
+##### Construct element in-place to array
 
 ```cpp
 template<class... Args>
@@ -2093,6 +2105,8 @@ value from the arguments. A reference to the newly created object is returned.
 
 *Complexity:* Amortized constant plus the complexity of the append operation of
 the underlying data structure, which is defined by the template parameter `array_type`.
+
+##### Construct element in-place to object
 
 ```cpp
 template<class... Args>
@@ -2124,6 +2138,8 @@ The function returns a pair, containing:
 *Complexity:* Amortized constant plus the complexity of the insert operation of
 the underlying data structure, which is defined by the template parameter `object_type`.
 
+##### Insert element to array
+
 ```cpp
 iterator insert(const_iterator, const basic_json &);
 iterator insert(const_iterator, basic_json &&);
@@ -2142,6 +2158,8 @@ function was called upon, remains in the same state as before the function call.
 
 *Complexity:* Constant plus the complexity of the insert operation of the underlying
 data structure, defined by the type `array_type`.
+
+##### Insert number of copies of element to array
 
 ```cpp
 iterator insert(const_iterator, size_type, const basic_json &);
@@ -2163,6 +2181,8 @@ Either all new JSON values can be inserted or none.
 
 *Complexity:* Linear in number of copies to insert, plus the complexity of the insert
 operation of the underlying data structure, defined by the type `array_type`.
+
+##### Insert elements from range to array
 
 ```cpp
 iterator insert(const_iterator pos, const_iterator first, const_iterator last);
@@ -2197,6 +2217,8 @@ Either all new JSON values can be inserted or none.
 plus the complexity of the insert operation of the underlying data structure, defined by
 the type `array_type`.
 
+##### Insert elements to array
+
 ```cpp
 iterator insert(const_iterator, std::initializer_list<basic_json>);
 ```
@@ -2223,6 +2245,8 @@ Either all new JSON values can be inserted or none.
 *Complexity:* Linear in size of the initializer list, plus the complexity of the
 insert operation of the underlying data structure, defined by the type `array_type`.
 
+##### Remove object element by key
+
 ```cpp
 size_type erase(const typename object_type::key_type &);
 ```
@@ -2240,6 +2264,8 @@ Other references and iterators are not affected.
 
 *Complexity:* The same complexity to find and erase all occurrences of the specified key
 of the underlying data structure.
+
+##### Remove array element by index
 
 ```cpp
 void erase(const size_type);
@@ -2259,6 +2285,8 @@ from a JSON value of type `json_type::array`.
 
 *Complexity:* The same complexity to erase the element at the specified index in
 the underlying data structure.
+
+##### Remove element by iterator
 
 ```cpp
 template<class IteratorType, /*SFINAE omitted*/ >
@@ -2294,6 +2322,8 @@ Depending on the type of the JSON value:
 - `json_type::string`: Complexity of the destruction of the `string_type`. Constant
   overhead by `basic_json`.
 - others: Constant.
+
+##### Remove elements in range
 
 ```cpp
 template<class IteratorType, /*SFINAE omitted*/ >
@@ -2479,7 +2509,7 @@ void to_json(BasicJsonType &, const CompatibleObjectType &);                    
 *Precondition:* Specified value types must be convertible to a JSON value. Depending on the
 overload, the specified value must implicitly convertible, according to the following table:
 
-| Overload | Implicitly convertible into             | Resulting JSON value type
+| Overload | Implicitly convertible into             | Resulting JSON value type             |
 | -------- | --------------------------------------- | ------------------------------------- |
 | (1)      | `BasicJsonType::boolean_type`           | `json_type::boolean`                  |
 |          | `BasicJsonType::integral_signed_type`   | `json_type::number_integral_signed`   |
