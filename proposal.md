@@ -49,7 +49,7 @@ It proposes a library extension.
     - [Container Access](#class-basic_json-container-access)
     - [Container Operations](#class-basic_json-container-operations)
     - [Serialization / Deserialization](#class-basic_json-serialization)
-  - [Nested Class `basic_json::json_pointer`](#class-json_pointer)
+  - [Class `json_pointer`](#class-json_pointer)
     - [Construction](#class-json_pointer-construction)
     - [Non-Modifying Operators](#class-json_pointer-non-modifying-op)
     - [Serialization](#class-json_pointer-serialization)
@@ -589,7 +589,7 @@ JSON pointers (see [RFC6901]). This is an alternative to address structured valu
 written in code:
 
 ```cpp
-const json::json_pointer p = "/answer/everything";
+const json_pointer p = "/answer/everything";
 data[p] = 42;
 ```
 
@@ -734,6 +734,9 @@ inline namespace json_v1 {
     // Policy class to configure the basic_json class template
     template < /*omitted*/ > struct json_policy;
 
+    // JSON pointer
+    class json_pointer;
+
     // generic base type basic_json
     template <class Policy> class basic_json;
 
@@ -750,8 +753,8 @@ inline namespace json_v1 {
     using json = basic_json<json_policy<>>;
 
     // user defined literals
-    json               operator "" _json(const char *, std::size_t);
-    json::json_pointer operator "" _json_pointer(const char *, std::size_t);
+    json         operator "" _json(const char *, std::size_t);
+    json_pointer operator "" _json_pointer(const char *, std::size_t);
 }
 
 // swap
@@ -902,8 +905,6 @@ public:
     class iterator               = /*implementation defined*/ ;
     class const_reverse_iterator = /*implementation defined*/ ;
     class reverse_iterator       = /*implementation defined*/ ;
-
-    class json_pointer;
 
     // constructors ...
 
@@ -2376,7 +2377,7 @@ friend std::isteram & operator>>(std::istream & basic_json &);
 
 
 <a name="class-json_pointer"></a>
-### Nested Class `basic_json::json_pointer`
+### Class `json_pointer`
 
 A JSON pointer defines a string syntax for identifying a specific value
 within a JSON document.
@@ -2384,8 +2385,6 @@ within a JSON document.
 ```cpp
 class json_pointer
 {
-    friend class basic_json;
-
 public:
     // construction
 
