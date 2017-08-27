@@ -1,6 +1,6 @@
 | Document Number | P0760R0                                   |
 |-----------------|-------------------------------------------|
-| Date            | 2017-08-23                                |
+| Date            | 2017-08-27                                |
 | Project         | Programming Language C++, Library Evolution Working Group |
 | Reply-to        | Niels Lohmann <<mail@nlohmann.me>><br>Mario Konrad <<mario.konrad@gmx.net>> |
 
@@ -30,7 +30,8 @@ It proposes a library extension.
   - [Conversion from STL containers](#examples-conv-from-stl)
   - [Implicit Conversions](#examples-implicit-conv)
   - [Arbitrary Type Conversions](#examples-arbitrary-conv)
-  - [Access using JSON Pointers](#examples-acces-json-pointers)
+  - [Access using JSON Pointers](#examples-access-json-pointers)
+  - [Flatten and Unflatten](#examples-flatten-unflatten)
   - [Support for JSON Patch](#examples-json-patch)
 - [Terms and definitions](#terms-defs)
 - [Technical Specification](#tech-spec)
@@ -56,6 +57,7 @@ It proposes a library extension.
   - [Function Templates `to_json`](#func-to_json)
   - [Function Templates `from_json`](#func-from_json)
   - [Function Templates `make_json`](#func-make_json)
+  - [Function Templates `flatten` and `unflatten`](#func-flatten-unflatten)
   - [User Defined Literals](#func-user-defined-literals)
   - [Template Function Specialization `swap`](#func-swap)
   - [Template Specialization `hash`](#func-hash)
@@ -574,7 +576,7 @@ Requirements for the custom type:
 
 
 
-<a name="examples-acces-json-pointers"></a>
+<a name="examples-access-json-pointers"></a>
 ### Access using JSON Pointers
 
 For the given example `data` the following table shows the result for various
@@ -597,6 +599,65 @@ For convenience, there is also an user defined literal:
 
 ```cpp
 data["/answer/everything"_json_pointer] = 42;
+```
+
+
+
+<a name="examples-flatten-unflatten"></a>
+### Flatten and Unflatten
+
+Support for the common operation of `flatten` and `unflatten` of hierachical data.
+The flat JSON value is an object with key/value pairs that represent the
+structure where the keys are JSON pointers. The `unflatten` operation goes the other
+way. Please note, both operations do not alter the original data, they return a copy.
+
+Example:
+
+```cpp
+json j_hierachical =
+{
+    {"pi", 3.141},
+    {"happy", true},
+    {"name", "Ned"},
+    {"nothing", nullptr},
+    {
+        "answer", {
+            {"everything", 42}
+        }
+    },
+    {"list", {1, 0, 2}},
+    {
+        "object", {
+            {"currency", "USD"},
+            {"value", 42.99},
+            {"", "empty string"},
+            {"/", "slash"},
+            {"~", "tilde"},
+            {"~1", "tilde1"}
+        }
+    }
+};
+
+json j_flat =
+{
+    {"/pi", 3.141},
+    {"/happy", true},
+    {"/name", "Ned"},
+    {"/nothing", nullptr},
+    {"/answer/everything", 42},
+    {"/list/0", 1},
+    {"/list/1", 0},
+    {"/list/2", 2},
+    {"/object/currency", "USD"},
+    {"/object/value", 42.99},
+    {"/object/", "empty string"},
+    {"/object/~1", "slash"},
+    {"/object/~0", "tilde"},
+    {"/object/~01", "tilde1"}
+};
+
+auto flat = flatten(j_hierarchical);   // basically: flat == j_flat
+auto hierarchical = unflatten(j_flat); // basically: hierarchical == j_hierarchical
 ```
 
 
@@ -712,7 +773,7 @@ A *JSON text* ([RFC7159] chapter 2) is a serialized JSON value that conforms to 
 <a name="tech-spec"></a>
 ## Technical Specification
 
-**TODO**
+[TODO]
 
 
 <a name="header-synopsis"></a>
@@ -744,6 +805,9 @@ inline namespace json_v1 {
     // ...
 
     // function templates `make_json`
+    // ...
+
+    // function templates `flatten` and `unflatten
     // ...
 
     // default json object class
@@ -2629,7 +2693,19 @@ template <class Container, class Policy = json_policy<> /*TODO:SFINAE*/>
 basic_json<Policy> make_json(const Container & c);
 ```
 
-**TODO**
+[TODO: specification]
+
+
+<a name="func-flatten-unflatten"></a>
+### Function Templates `flatten` and `unflatten`
+
+```cpp
+template <class BaseType> BaseType flatten(const BaseType & value);
+
+template <class BaseType> BaseType unflatten(const BaseType & value);
+```
+
+[TODO: specification]
 
 
 <a name="func-user-defined-literals"></a>
@@ -2720,7 +2796,7 @@ Section 8.1 of RFC7159:
 <a name="acknowledgements"></a>
 ## Acknowledgements
 
-**TODO**
+[TODO]
 
 
 <a name="references"></a>
