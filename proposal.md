@@ -811,7 +811,10 @@ inline namespace json_v1 {
     // function templates `make_json`
     // ...
 
-    // function templates `flatten` and `unflatten
+    // function templates `flatten` and `unflatten`
+    // ...
+
+    // function templates `diff` and patch`
     // ...
 
     // default json object class
