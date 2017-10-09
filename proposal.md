@@ -58,6 +58,7 @@ It proposes a library extension.
   - [Function Templates `from_json`](#func-from_json)
   - [Function Templates `make_json`](#func-make_json)
   - [Function Templates `flatten` and `unflatten`](#func-flatten-unflatten)
+  - [Function Templates `diff` and `patch`](#func-diff_patch)
   - [User Defined Literals](#func-user-defined-literals)
   - [Template Function Specialization `swap`](#func-swap)
   - [Template Specialization `hash`](#func-hash)
@@ -665,7 +666,7 @@ auto hierarchical = unflatten(j_flat); // basically: hierarchical == j_hierarchi
 ### Support for JSON Patch
 
 JSON patch [RFC6902] is supported, which allows to describe differences between two
-JSON values - effectively allowing patch and diff operations known from Unix.
+JSON values - effectively allowing `patch` and `diff` operations known from Unix.
 
 ```cpp
 // a JSON value
@@ -682,7 +683,7 @@ json j_patch = R"([
 ])"_json;
 
 // apply the patch
-json j_result = j_original.patch(j_patch);
+json j_result = patch(j_original, j_patch);
 ```
 
 results in:
@@ -698,7 +699,7 @@ Computing the difference:
 
 ```cpp
 // calculate a JSON patch from two JSON values
-json::diff(j_result, j_original);
+auto j_diff = diff(j_result, j_original);
 ```
 
 results in:
@@ -810,7 +811,10 @@ inline namespace json_v1 {
     // function templates `make_json`
     // ...
 
-    // function templates `flatten` and `unflatten
+    // function templates `flatten` and `unflatten`
+    // ...
+
+    // function templates `diff` and patch`
     // ...
 
     // default json object class
@@ -2737,6 +2741,34 @@ template <class BaseType> BaseType unflatten(const BaseType & value);
 ```
 
 [TODO: specification]
+
+
+<a name="func-diff_patch"></a>
+### Function Templates `diff` and `patch`
+
+#### Difference between two JSON values
+
+```cpp
+template <class Base> Base diff(const Base & first, const Base & second);
+```
+
+*Effect:* Computes the difference between the two JSON values `first` and `second`.
+The result is a JSON value which describes the difference, according to [RFC6902].
+
+[TODO: specification]
+
+
+#### Apply patch to a JSON value
+
+```cpp
+template <class Base> Base patch(const Base & org, const Base & json_patch);
+```
+
+*Effect:* Applies the specified patch to the given JSON value. The result is a
+modified copy. The patch must be in the format described in [RFC6902].
+
+[TODO: specification]
+
 
 
 <a name="func-user-defined-literals"></a>
