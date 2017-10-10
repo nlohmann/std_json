@@ -1,6 +1,6 @@
 | Document Number | P0760R0                                   |
 |-----------------|-------------------------------------------|
-| Date            | 2017-09-02                                |
+| Date            | 2017-10-10                                |
 | Project         | Programming Language C++, Library Evolution Working Group |
 | Reply-to        | Niels Lohmann <<mail@nlohmann.me>><br>Mario Konrad <<mario.konrad@gmx.net>> |
 
@@ -37,6 +37,7 @@ It proposes a library extension.
 - [Technical Specification](#tech-spec)
   - [Header `<json>` synopsis](#header-synopsis)
   - [Enumeration `json_type`](#enum-json_type)
+  - [Enumeration `json_format`](#enum-json_format)
   - [Class Template `json_serializer`](#class-json_serializer)
   - [Class Template `json_parser`](#class-json_parser)
   - [Class Template `json_policy`](#class-json_policy)
@@ -54,6 +55,7 @@ It proposes a library extension.
     - [Construction](#class-json_pointer-construction)
     - [Non-Modifying Operators](#class-json_pointer-non-modifying-op)
     - [Serialization](#class-json_pointer-serialization)
+  - [Function Templates `to_string`](#func-to_string)
   - [Function Templates `to_json`](#func-to_json)
   - [Function Templates `from_json`](#func-from_json)
   - [Function Templates `make_json`](#func-make_json)
@@ -254,25 +256,105 @@ auto j3 = make_json("{ \"happy\": true, \"pi\": 3.141 }");
 <a name="examples-stringify"></a>
 ### Stringify ("Serialization")
 
-You can also get a string representation (i.e., serialize the JSON value to a JSON text):
+From the perspective of the user, it should be easy to get a string representation
+of the JSON data (i.e., serialize the JSON value to a JSON text). It is possible
+to get the JSON text of a complete hiarchy, as well as for single value, no matter
+if part of a hierachy or not.
+
+There are two common formats, *compact* (default) and human readable *pretty*.
+
+The two formats could be described as follows:
+
+- *compact*: as few spaces as possible. Useful for application interoperability (e.g.
+  transmission of data over network).
+- *pretty*: indentation of every hierarchical step, configurable number of spaces for
+  indentation with a sensible default. Useful for applications where human readability
+  is required (e.g. config files).
+
+Defining formatst as enumeration leaves room for future extensions.
+
+Examples for the *compact* format:
 
 ```cpp
-// explicit conversion to string
-std::string s = j.str();
-assert(s == "{\"happy\":true,\"pi\":3.141}");
+const json j = "{ \"happy\": true, \"pi\": 3.141 }"_json;
 
-// serialization with pretty printing
-// pass in the amount of spaces to indent
-std::cout << j.str(4) << std::endl;
+const std::string expected = "{\"happy\":true,\"pi\":3.141}";
+
+// using member function, default
+std::string s1 = j.str();
+assert(s1 == expected);
+
+// using member function, explicit format
+std::string s2 = j.str(json_format::compact);
+assert(s1 == s2);
+
+// using free function, default
+std::string s3 = to_string(j);
+assert(s3 == expected);
+
+// using free function, explicit format
+std::string s4 = to_string(j, json_format::compact);
+assert(s4 == s3);
+
+// streams
+std::ostringstream os;
+os << j;
+assert(os.str() == expected);
 ```
 
-This yields the output on the console:
+For pretty stringification, there is the option to choose the identation size in number of spaces:
+
+```cpp
+const json j = "{ \"happy\": true, \"pi\": 3.141 }"_json;
+
+const std::string expected =
+"{\n"
+"    \"happy\": true,\n"
+"    \"pi\": 3.141\n"
+"}";
+
+// using member function
+std::string s1 = j.str(json_format::pretty, 4);
+assert(s1 == expected);
+
+// using free function
+std::string s2 = to_string(j, json_format::pretty, 4);
+assert(s2 == expected);
+
+// pretty with streams
+std::ostringstream os;
+os << std::setw(4) << j << std::endl;
+assert(os.str() == expected);
 ```
-{
-    "happy": true,
-    "pi": 3.141
-}
+
+JSON text from only a single value:
+
+```cpp
+const json j = {
+    { "pi", 3.141 },
+    { "flag", true },
+    { "name", "Ned Flanders" },
+    { "nothing", nullptr },
+    { "answer",
+        { "everything", 42 }
+    },
+    { "list", { 0, 3, 6, 9, 12 }},
+    { "object", {
+        { "currency", "USD" },
+        { "value", 42.99 }
+    }}
+};
+
+const std::string s1 = j["answer"].str();
+assert(s1 == "[\"everything\",42]");
+
+const std::string s2 = j["object"]["currency"].str();
+assert(s2 == "\"USD\"");
+
+const std::string s3 = to_string(j["object"]["currency"]);
+assert(s2 == s3);
 ```
+
 
 <a name="examples-streams"></a>
 ### Playing nice with streams
@@ -787,6 +869,9 @@ inline namespace json_v1 {
     // JSON value types
     enum class json_type /*omitted*/;
 
+    // JSON formatting options
+    enum class json_format /*omitted*/;
+
     // Serializier, customization point
     template < /*omitted*/ > class json_serializer;
 
@@ -801,6 +886,9 @@ inline namespace json_v1 {
 
     // generic base type basic_json
     template <class Policy> class basic_json;
+
+    // function templates `to_string`
+    // ...
 
     // function templates `to_json` for various types, customization points
     // ...
@@ -857,6 +945,18 @@ enum class json_type : /*unspecified*/
 
 *Remarks:* The semantics of the enumerators is ascending nature. This will be
 relevant for lexicographical ordering.
+
+
+<a name="enum-json_format"></a>
+### Enumeration `json_format`
+
+```cpp
+enum class json_format : /*unspecified*/
+{
+    compact = /*unspecified*/ ,
+    pretty  = /*unspecified*/
+};
+```
 
 
 <a name="class-json_serializer"></a>
@@ -2465,8 +2565,8 @@ empty range is a no-op. Depending on the type of the JSON value:
 #### Serialization / Deserialization
 
 ```cpp
-// content to string
-string_type str(int indent) const;
+// content to JSON text
+string_type str(json_format fmt = json_format::compact, size_type indent = 2) const;
 
 // output stream
 friend std::ostream & operator<<(std::ostream & const basic_json &);
@@ -2580,6 +2680,20 @@ operator std::string() const;
 ```
 
 *Effect:* Typecast operator. Same as member function `str()`.
+
+
+<a name="func-to_string"></a>
+### Function Templates `to_string`
+
+```cpp
+template <class BasicJsonType>
+typename BasicJsonType::string_type to_string(
+    const BasicJsonType & j,
+    json_format fmt = json_format::compact,
+    typename BasicJsonType::size_type width = 2);
+```
+
+[TODO: specification]
 
 
 <a name="func-to_json"></a>
