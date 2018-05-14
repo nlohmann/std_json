@@ -1,6 +1,6 @@
 | Document Number | P0760R0                                   |
 |-----------------|-------------------------------------------|
-| Date            | 2017-10-10                                |
+| Date            | 2018-05-14                                |
 | Project         | Programming Language C++, Library Evolution Working Group |
 | Reply-to        | Niels Lohmann <<mail@nlohmann.me>><br>Mario Konrad <<mario.konrad@gmx.net>> |
 
@@ -9,7 +9,7 @@
 <a name="introduction"></a>
 ## Introduction
 
-This paper presents a proposal for *JavaScript Object Notation* [RFC7159] parsing and generation.
+This paper presents a proposal for *JavaScript Object Notation* [RFC8259] parsing and generation.
 It proposes a library extension.
 
 
@@ -110,7 +110,7 @@ Major:
   STL containers like `std::map` or `std::vector` - just like JSON supports different types like
   key/value pairs and arrays.
 
-- **RFC7159 Conformance**. Fully conformance to the JSON specification and explicitly stating the
+- **RFC8259 Conformance**. Fully conformance to the JSON specification and explicitly stating the
   choice of possible design decisions such as limitations or behavioral details.
 
 Minor:
@@ -757,7 +757,7 @@ json j_original = R"({
   "foo": "bar"
 })"_json;
 
-// a JSON patch (RFC6902)
+// a JSON patch ([RFC6902])
 json j_patch = R"([
   { "op": "replace", "path": "/baz", "value": "boo" },
   { "op": "add", "path": "/hello", "value": ["world"] },
@@ -799,58 +799,59 @@ results in:
 ## Terms and definitions
 
 The terminology used in this paper is intended to be consistent with terms used in
-the JSON domain [RFC7159].
+the JSON domain [RFC8259].
 
 ### value
 
-The term *value* ([RFC7159] chapter 3) refers to an entity that represents information and can be
-one of the following:
-
+The term *value* ([RFC8259] chapter 3) refers to an entity that represents information
+and must be one of the following types:
 - object
 - array
 - number
 - string
 - boolean
-- null
+
+or one of the following three literal names:
+- `null`
+- `true`  (type *boolean*)
+- `false` (type *boolean*)
 
 Objects and arrays are *structured values*, whereas strings, boolean, and null are *primitive values*.
 
 ### boolean
 
-Values for *boolean* can be
-- true
-- false
+A value of type *boolean* can be one of the following literals:
+- `true`
+- `false`
 
 ### object
 
-The term *object* ([RFC7159] chapter 4) refers to a structured value, consisting of zero
-or more unordered name/value pairs. The term *name* refers to the key that identifies a value. This
-is always of type *string*.
+The term *object* ([RFC8259] chapter 4) refers to a structured value, consisting of zero
+or more unordered name/value pairs. The term *name* refers to the key that identifies a value.
+This is always of type *string*.
 
 ### array
 
-The term *array* ([RFC7159] chapter 5) refers to a structured value, consisting of zero or
+The term *array* ([RFC8259] chapter 5) refers to a structured value, consisting of zero or
 more values.
 
 ### string
 
-The term *string* ([RFC7169] chapter 7) refers to a string consisting of zero
+The term *string* ([RFC8259] chapter 7) refers to a string consisting of zero
 or more [Unicode] characters, beginning and ending with quotation marks.
 
 ### number
 
-The term *number* ([RFC7159] chapter 6) represents a numerical value and is one of the
+The term *number* ([RFC8259] chapter 6) represents a numerical value and is one of the
 following types:
-
-- integral signed
-- integral unsigned
+- integral
 - floating point
 
 Speical cases like *inf* and *NaN* are not permitted.
 
 ### JSON text
 
-A *JSON text* ([RFC7159] chapter 2) is a serialized JSON value that conforms to the JSON grammar.
+A *JSON text* ([RFC8259] chapter 2) is a serialized JSON value that conforms to the JSON grammar.
 
 
 <a name="tech-spec"></a>
@@ -2942,7 +2943,7 @@ JSON value.
 
 ### Limitations
 
-Section 9 of RFC7159 allows a conforming implementation to:
+Section 9 of [RFC8259] allows a conforming implementation to:
 
 - set limits on the size of texts that it accepts
 - set limits on the maximum depth of nesting
@@ -2951,24 +2952,36 @@ Section 9 of RFC7159 allows a conforming implementation to:
 
 ## Interoperability
 
-Section 4 of RFC7159 states that keys in an object SHOULD be unique and
+Section 4 of [RFC8259] states that keys in an object SHOULD be unique and
 
 > Implementations whose behavior does not depend on member
   ordering will be interoperable in the sense that they will not be
   affected by these differences.
 
-Sect. 6 of RFC7159:
+Sect. 6 of [RFC8259]:
 
 > Note that when such software is used, numbers that are integers and
-  are in the range [-(2**53)+1, (2**53)-1] are interoperable in the
+  are in the range `[-(2**53)+1, (2**53)-1]` are interoperable in the
   sense that implementations will agree exactly on their numeric
   values.
 
-Section 8.1 of RFC7159:
+Section 8.1 of [RFC8259]:
 
-> JSON texts that are encoded in UTF-8 are interoperable in the sense
-  that they will be read successfully by the maximum number of
-  implementations
+> JSON text exchanged between systems that are not part of a closed
+  ecosystem MUST be encoded using UTF-8 [RFC3629].
+
+> Previous specifications of JSON have not required the use of UTF-8
+  when transmitting JSON text.  However, the vast majority of JSON-
+  based software implementations have chosen to use the UTF-8 encoding,
+  to the extent that it is the only encoding that achieves
+  interoperability.
+
+> Implementations MUST NOT add a byte order mark (U+FEFF) to the
+  beginning of a networked-transmitted JSON text.  In the interests of
+  interoperability, implementations that parse JSON texts MAY ignore
+  the presence of a byte order mark rather than treating it as an
+  error.
+
 
 <a name="acknowledgements"></a>
 ## Acknowledgements
@@ -2979,12 +2992,14 @@ Section 8.1 of RFC7159:
 <a name="references"></a>
 ## References
 
-- [RFC7159]	JavaScript Object Notation, <https://tools.ietf.org/html/rfc7159>
+- [RFC8259]	JavaScript Object Notation, <https://tools.ietf.org/html/rfc8259>
 
 - [RFC6901]	JavaScript Object Notation Pointer, <https://tools.ietf.org/html/rfc6901>
 
 - [RFC6902]	JavaScript Object Notation Patch, <https://tools.ietf.org/html/rfc6902>
 
 - [nlohmann-json]	Example Implementation, <https://github.com/nlohmann/json>
+
+- [RFC3629] UTF-8, a transformation format of ISO 10646, <https://tools.ietf.org/html/rfc3629>
 
 - [Unicode] The Unicode Consortium, "The Unicode Standard", <http://www.unicode.org/versions/latest/>
