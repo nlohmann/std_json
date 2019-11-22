@@ -89,8 +89,9 @@ In comparison, JSON is part of the respective standard libraries of languages li
 |    |_   parse/deserialize   |           | <---------- |  ________|__
 | JSON | -------------------> | C++ json  |  interface  | | other     |
 | text | <------------------- | container | ----------> |_| C++ types |
-|______|  stringify/serialize |___________|               |___________|
-
+|  or  |  stringify/serialize |___________|               |___________|
+|binary|
+|______|
 ```
 
 Major:
