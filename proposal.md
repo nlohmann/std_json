@@ -76,10 +76,10 @@ Data represented in JSON format is very widely used for serialization of data. P
 uses are the numerous frameworks used by websites for asynchronous communication, as well
 as configuration data.
 
-The format itself is human readable and very lightweight.
+The format, in its text form, is human readable and very lightweight.
 
 There are numerous libraries written in C and C++, usable by C++, but none in the standard.
-In comparison, JSON is part of the respective standard libraries of languages like Python, Swift, or D.
+In comparison, JSON is part of the respective standard libraries of languages like [GO](https://blog.golang.org/json-and-go), Python, Swift, or D.
 
 <a name="design-goals"></a>
 ## Design Goals
@@ -112,6 +112,8 @@ Major:
 
 - **RFC8259 Conformance**. Fully conformance to the JSON specification and explicitly stating the
   choice of possible design decisions such as limitations or behavioral details.
+  
+  NOTE: JSON in binary form has started to be prominent. Some well known NO_SQL databases, are [based on binary JSON](http://bsonspec.org/). Thus future iterations of this proposal will be having, extendable mechanism for parsing/serializing to/from binary JSONN formats too.
 
 Minor:
 
