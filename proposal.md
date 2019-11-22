@@ -113,7 +113,7 @@ Major:
 - **RFC8259 Conformance**. Fully conformance to the JSON specification and explicitly stating the
   choice of possible design decisions such as limitations or behavioral details.
   
-  NOTE: JSON in binary form has started to be prominent. Some well known NO_SQL databases, are [based on binary JSON](http://bsonspec.org/). Thus future iterations of this proposal will be having, extendable mechanism for parsing/serializing to/from binary JSONN formats too.
+  NOTE: JSON in binary form has started to be prominent. Some well known NO_SQL databases, are [based on binary JSON](http://bsonspec.org/). Thus future iterations of this proposal will be having, extendable mechanism for parsing/serializing to/from various binary JSON formats too.
 
 Minor:
 
@@ -121,19 +121,21 @@ Minor:
   the major design goals. Unnecessary overhead should be avoided, but not at all costs.
   This may not suit everyone everywhere, but for a presumably large audience performance is
   good enough while providing a fairly easy data structure to work with.
-
+  
+  NOTE: Extendable parsin/serializing mechanism will alow for competing plugins to appear, to improve the performance considerably.
 
 <a name="scope"></a>
 ## Scope
 
 This extension is a pure library extension. It does not require changes to the standard components.
-The extension can be implemented in C++17.
+The extension can be implemented in C++17. The extension is also C++20 compatible.
 
+C++20 keyword `char8_t` brings (at last) the UTF-8 to the C++. JSON mandates UTF-8.
 
 <a name="examples"></a>
 ## Examples
 
-In this section, we present examples how the JSON integration into C++ looks like. For these examples,
+In this section, we present examples how the JSON integration into standard C++ looks like. For these examples,
 let us consider this JSON value:
 
 ```js
@@ -152,14 +154,15 @@ let us consider this JSON value:
     }
 }
 ```
+NOTE: "Simpsons" theme in examples is very lame. Suggest using for example financial transaction theme. Those require very fast server side C++ components.
 
 In this section, we use the terms "JSON value", "object", and "array" as described in
 Sect. [Terms and definitions](#terms-defs).
 
 <a name="examples-handling-in-cpp"></a>
-### Handling in C++
+### Handling in the standard C++
 
-The JSON value above can be constructed comfortably by using index operators:
+The JSON values can be constructed (comfortably) by using standard index operators:
 
 ```cpp
 json data;
@@ -186,7 +189,6 @@ data["list"] = { 0, 3, 6, 9, 12 };
 // object, defined as list of pairs
 data["object"] = {{ "currency", "USD" }, { "value", 42.99 }};
 ```
-
 The same JSON value can be represented more directly in C++:
 
 ```cpp
