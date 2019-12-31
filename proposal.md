@@ -1664,7 +1664,7 @@ for more information.
 The return value depends on the different types and is defined as follows:
 
 | Value type                            | return value                                 |
-| ------------------------------------- | -------------------------------------------- |
+| ------------------------------------- | -------------------------------------------- |
 | `json_type::null`                     | `0` (same as `size()`)                       |
 | `json_type::boolean`                  | `1` (same as `size()`)                       |
 | `json_type::string`                   | `1` (same as `size()`)                       |
