@@ -1,0 +1,43 @@
+{
+    "activity_report": {
+        "related_message_reference": {
+            "creation_date_time": "2009-09-09T11:37:00",
+            "identification": "ARRMessage24"
+        },
+        "report": [
+            {
+                "transaction_identification": "01190799181-6940-48",
+                "reported_entity": [
+                    {
+                        "bic": "ADIABE22"
+                    }
+                ],
+                "reported_item": [
+                    {
+                        "activity": {
+                            "message_name": "tsmt.011.001.02"
+                        },
+                        "initiator": {
+                            "bic": "SWHQBEBB"
+                        },
+                        "date_time": "2009-09-06T08:54:00"
+                    },
+                    {
+                        "activity": {
+                            "message_name": "tsmt.020.001.02"
+                        },
+                        "initiator": {
+                            "bic": "ADIABE22"
+                        },
+                        "date_time": "2009-09-06T08:52:00"
+                    }
+                ]
+            }
+        ],
+        "report_identification": {
+            "creation_date_time": "2009-09-09T11:38:00",
+            "identification": "ARPMessage25"
+        }
+    },
+    "@xmlns": "urn:iso:std:iso:20022:tech:xsd:tsmt.002.001.04"
+}
